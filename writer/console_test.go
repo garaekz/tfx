@@ -6,14 +6,14 @@ import (
 	"testing"
 
 	"github.com/garaekz/tfx/color"
-	"github.com/garaekz/tfx/internal/core"
+	. "github.com/garaekz/tfx/internal/shared"
 )
 
 func TestConsoleWriter_Write(t *testing.T) {
 	buf := &bytes.Buffer{}
-	opts := Options{
-		Level:      core.LevelInfo,
-		Format:     core.FormatBadge,
+	opts := ConsoleOptions{
+		Level:      LevelInfo,
+		Format:     FormatBadge,
 		Timestamp:  false,
 		Theme:      color.DefaultTheme,
 		ForceColor: false,
@@ -22,10 +22,10 @@ func TestConsoleWriter_Write(t *testing.T) {
 
 	cw := NewConsoleWriter(buf, opts)
 
-	entry := &core.Entry{
-		Level:   core.LevelInfo,
+	entry := &Entry{
+		Level:   LevelInfo,
 		Message: "hello",
-		Fields:  core.Fields{},
+		Fields:  Fields{},
 	}
 
 	if err := cw.Write(entry); err != nil {

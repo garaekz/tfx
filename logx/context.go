@@ -1,4 +1,4 @@
-package tfx
+package logx
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/garaekz/tfx/color"
+	"github.com/garaekz/tfx/internal/shared"
 )
 
 // WithField adds a single field to the context
@@ -24,7 +25,7 @@ func (c *Context) WithField(key string, value interface{}) *Context {
 }
 
 // WithFields adds multiple fields to the context
-func (c *Context) WithFields(fields Fields) *Context {
+func (c *Context) WithFields(fields shared.Fields) *Context {
 	newFields := make(map[string]interface{})
 	for k, v := range c.fields {
 		newFields[k] = v
@@ -75,13 +76,13 @@ func (c *Context) WithTraceID(traceID string) *Context {
 }
 
 // log is the internal method that creates entries with fields
-func (c *Context) log(level Level, msg string) {
+func (c *Context) log(level shared.Level, msg string) {
 	if !c.logger.shouldLog(level) {
 		return
 	}
 
 	// Merge context fields with any fields from context.Context
-	allFields := make(Fields)
+	allFields := make(shared.Fields)
 
 	// Add fields from the logging context
 	for k, v := range c.fields {
@@ -105,7 +106,7 @@ func (c *Context) log(level Level, msg string) {
 	c.logger.mu.RUnlock()
 
 	for _, writer := range writers {
-		go func(w Writer) {
+		go func(w shared.Writer) {
 			w.Write(entry)
 		}(writer)
 	}
@@ -113,44 +114,44 @@ func (c *Context) log(level Level, msg string) {
 
 // Logging methods for Context
 func (c *Context) Trace(msg string, args ...interface{}) {
-	c.log(LevelTrace, fmt.Sprintf(msg, args...))
+	c.log(shared.LevelTrace, fmt.Sprintf(msg, args...))
 }
 
 func (c *Context) Debug(msg string, args ...interface{}) {
-	c.log(LevelDebug, fmt.Sprintf(msg, args...))
+	c.log(shared.LevelDebug, fmt.Sprintf(msg, args...))
 }
 
 func (c *Context) Info(msg string, args ...interface{}) {
-	c.log(LevelInfo, fmt.Sprintf(msg, args...))
+	c.log(shared.LevelInfo, fmt.Sprintf(msg, args...))
 }
 
 func (c *Context) Warn(msg string, args ...interface{}) {
-	c.log(LevelWarn, fmt.Sprintf(msg, args...))
+	c.log(shared.LevelWarn, fmt.Sprintf(msg, args...))
 }
 
 func (c *Context) Error(msg string, args ...interface{}) {
-	c.log(LevelError, fmt.Sprintf(msg, args...))
+	c.log(shared.LevelError, fmt.Sprintf(msg, args...))
 }
 
 func (c *Context) Fatal(msg string, args ...interface{}) {
-	c.log(LevelFatal, fmt.Sprintf(msg, args...))
+	c.log(shared.LevelFatal, fmt.Sprintf(msg, args...))
 	os.Exit(1)
 }
 
 func (c *Context) Panic(msg string, args ...interface{}) {
 	msg = fmt.Sprintf(msg, args...)
-	c.log(LevelPanic, msg)
+	c.log(shared.LevelPanic, msg)
 	panic(msg)
 }
 
 func (c *Context) Success(msg string, args ...interface{}) {
-	successFields := make(Fields)
+	successFields := make(shared.Fields)
 	for k, v := range c.fields {
 		successFields[k] = v
 	}
 	successFields["type"] = "success"
 
-	entry := c.logger.createEntry(LevelInfo, fmt.Sprintf(msg, args...), successFields)
+	entry := c.logger.createEntry(shared.LevelInfo, fmt.Sprintf(msg, args...), successFields)
 	entry.Context = c.ctx
 
 	c.logger.mu.RLock()
@@ -158,21 +159,21 @@ func (c *Context) Success(msg string, args ...interface{}) {
 	c.logger.mu.RUnlock()
 
 	for _, writer := range writers {
-		go func(w Writer) {
+		go func(w shared.Writer) {
 			w.Write(entry)
 		}(writer)
 	}
 }
 
 func (c *Context) Badge(tag, msg string, color color.Color, args ...interface{}) {
-	badgeFields := make(Fields)
+	badgeFields := make(shared.Fields)
 	for k, v := range c.fields {
 		badgeFields[k] = v
 	}
 	badgeFields["badge"] = tag
 	badgeFields["badge_color"] = color
 
-	entry := c.logger.createEntry(LevelInfo, fmt.Sprintf(msg, args...), badgeFields)
+	entry := c.logger.createEntry(shared.LevelInfo, fmt.Sprintf(msg, args...), badgeFields)
 	entry.Context = c.ctx
 
 	c.logger.mu.RLock()
@@ -180,15 +181,15 @@ func (c *Context) Badge(tag, msg string, color color.Color, args ...interface{})
 	c.logger.mu.RUnlock()
 
 	for _, writer := range writers {
-		go func(w Writer) {
+		go func(w shared.Writer) {
 			w.Write(entry)
 		}(writer)
 	}
 }
 
 // GetFields returns a copy of all fields in the context
-func (c *Context) GetFields() Fields {
-	fields := make(Fields)
+func (c *Context) GetFields() shared.Fields {
+	fields := make(shared.Fields)
 	for k, v := range c.fields {
 		fields[k] = v
 	}
@@ -202,13 +203,13 @@ func (c *Context) GetContext() context.Context {
 
 // Helper function to extract fields from context.Context
 // This is a common pattern where you store logging fields in context
-func extractContextFields(ctx context.Context) Fields {
+func extractContextFields(ctx context.Context) shared.Fields {
 	if ctx == nil {
 		return nil
 	}
 
 	// Check for common context keys used for logging
-	fields := make(Fields)
+	fields := make(shared.Fields)
 
 	// Request ID
 	if reqID := ctx.Value("request_id"); reqID != nil {
@@ -247,6 +248,6 @@ func FromContext(ctx context.Context) *Context {
 	return GetLogger().WithContext(ctx)
 }
 
-func FromContextWithFields(ctx context.Context, fields Fields) *Context {
+func FromContextWithFields(ctx context.Context, fields shared.Fields) *Context {
 	return GetLogger().WithContext(ctx).WithFields(fields)
 }

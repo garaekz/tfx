@@ -1,4 +1,4 @@
-package tfx
+package logx
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/garaekz/tfx/color"
+	"github.com/garaekz/tfx/internal/shared"
 	writerpkg "github.com/garaekz/tfx/writer"
 )
 
@@ -22,20 +23,20 @@ func init() {
 }
 
 // New creates a new logger instance
-func New(opts Options) *Logger {
+func New(opts LogOptions) *Logger {
 	if opts.Output == nil {
 		opts.Output = os.Stdout
 	}
 
 	logger := &Logger{
 		options: opts,
-		writers: []Writer{},
+		writers: []shared.Writer{},
 		hooks:   []Hook{},
 		ctx:     context.Background(),
 	}
 
 	// Add default console writer
-	cwOpts := writerpkg.Options{
+	cwOpts := writerpkg.ConsoleOptions{
 		Level:        opts.Level,
 		Format:       opts.Format,
 		Timestamp:    opts.Timestamp,
@@ -69,7 +70,7 @@ func New(opts Options) *Logger {
 }
 
 // Configure updates the global logger options
-func Configure(opts Options) {
+func Configure(opts LogOptions) {
 	globalMu.Lock()
 	defer globalMu.Unlock()
 	globalLogger = New(opts)
@@ -83,7 +84,7 @@ func GetLogger() *Logger {
 }
 
 // SetLevel sets the minimum logging level
-func (l *Logger) SetLevel(level Level) {
+func (l *Logger) SetLevel(level shared.Level) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.options.Level = level
@@ -97,7 +98,7 @@ func (l *Logger) SetOutput(w io.Writer) {
 	// Update console writer
 	for i, wr := range l.writers {
 		if cw, ok := wr.(*writerpkg.ConsoleWriter); ok {
-			cwOpts := writerpkg.Options{
+			cwOpts := writerpkg.ConsoleOptions{
 				Level:        l.options.Level,
 				Format:       l.options.Format,
 				Timestamp:    l.options.Timestamp,
@@ -109,15 +110,19 @@ func (l *Logger) SetOutput(w io.Writer) {
 				ForceColor:   l.options.ForceColor,
 				DisableColor: l.options.DisableColor,
 			}
-			l.writers[i] = writerpkg.NewConsoleWriter(w, cwOpts)
 			cw.Close()
+			l.writers[i] = writerpkg.NewConsoleWriter(w, cwOpts)
 			break
 		}
 	}
 }
 
+func (l *Logger) Flush() {
+	l.wg.Wait()
+}
+
 // SetFormat sets the output format
-func (l *Logger) SetFormat(format Format) {
+func (l *Logger) SetFormat(format shared.Format) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.options.Format = format
@@ -128,6 +133,25 @@ func (l *Logger) EnableTimestamp() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.options.Timestamp = true
+	// Update console writers
+	for i, wr := range l.writers {
+		if cw, ok := wr.(*writerpkg.ConsoleWriter); ok {
+			cwOpts := writerpkg.ConsoleOptions{
+				Level:        l.options.Level,
+				Format:       l.options.Format,
+				Timestamp:    l.options.Timestamp,
+				TimeFormat:   l.options.TimeFormat,
+				Theme:        l.options.Theme,
+				BadgeWidth:   l.options.BadgeWidth,
+				BadgeStyle:   l.options.BadgeStyle,
+				ShowCaller:   l.options.ShowCaller,
+				ForceColor:   l.options.ForceColor,
+				DisableColor: l.options.DisableColor,
+			}
+			cw.Close()
+			l.writers[i] = writerpkg.NewConsoleWriter(l.options.Output, cwOpts)
+		}
+	}
 }
 
 // DisableTimestamp disables timestamp in logs
@@ -135,6 +159,25 @@ func (l *Logger) DisableTimestamp() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.options.Timestamp = false
+	// Update console writers
+	for i, wr := range l.writers {
+		if cw, ok := wr.(*writerpkg.ConsoleWriter); ok {
+			cwOpts := writerpkg.ConsoleOptions{
+				Level:        l.options.Level,
+				Format:       l.options.Format,
+				Timestamp:    l.options.Timestamp,
+				TimeFormat:   l.options.TimeFormat,
+				Theme:        l.options.Theme,
+				BadgeWidth:   l.options.BadgeWidth,
+				BadgeStyle:   l.options.BadgeStyle,
+				ShowCaller:   l.options.ShowCaller,
+				ForceColor:   l.options.ForceColor,
+				DisableColor: l.options.DisableColor,
+			}
+			cw.Close()
+			l.writers[i] = writerpkg.NewConsoleWriter(l.options.Output, cwOpts)
+		}
+	}
 }
 
 // SetTheme sets the color theme
@@ -145,7 +188,7 @@ func (l *Logger) SetTheme(theme color.ColorTheme) {
 }
 
 // AddWriter adds a new writer
-func (l *Logger) AddWriter(writer Writer) {
+func (l *Logger) AddWriter(writer shared.Writer) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.writers = append(l.writers, writer)
@@ -159,7 +202,7 @@ func (l *Logger) AddHook(hook Hook) {
 }
 
 // WithFields creates a new context with fields
-func (l *Logger) WithFields(fields Fields) *Context {
+func (l *Logger) WithFields(fields shared.Fields) *Context {
 	return &Context{
 		logger: l,
 		fields: map[string]interface{}(fields),
@@ -177,15 +220,15 @@ func (l *Logger) WithContext(ctx context.Context) *Context {
 }
 
 // shouldLog checks if the level should be logged
-func (l *Logger) shouldLog(level Level) bool {
+func (l *Logger) shouldLog(level shared.Level) bool {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	return level >= l.options.Level
 }
 
 // createEntry creates a log entry
-func (l *Logger) createEntry(level Level, msg string, fields Fields) *Entry {
-	entry := &Entry{
+func (l *Logger) createEntry(level shared.Level, msg string, fields shared.Fields) *shared.Entry {
+	entry := &shared.Entry{
 		Level:     level,
 		Message:   msg,
 		Fields:    fields,
@@ -211,7 +254,7 @@ func (l *Logger) createEntry(level Level, msg string, fields Fields) *Entry {
 }
 
 // getCaller gets caller information
-func (l *Logger) getCaller() *CallerInfo {
+func (l *Logger) getCaller() *shared.CallerInfo {
 	pc, file, line, ok := runtime.Caller(l.options.CallerDepth)
 	if !ok {
 		return nil
@@ -222,7 +265,7 @@ func (l *Logger) getCaller() *CallerInfo {
 		return nil
 	}
 
-	return &CallerInfo{
+	return &shared.CallerInfo{
 		File:     file,
 		Function: fn.Name(),
 		Line:     line,
@@ -230,7 +273,7 @@ func (l *Logger) getCaller() *CallerInfo {
 }
 
 // log writes a log entry
-func (l *Logger) log(level Level, msg string, fields Fields) {
+func (l *Logger) log(level shared.Level, msg string, fields shared.Fields) {
 	if !l.shouldLog(level) {
 		return
 	}
@@ -242,52 +285,54 @@ func (l *Logger) log(level Level, msg string, fields Fields) {
 	l.mu.RUnlock()
 
 	for _, wr := range writers {
-		go func(w Writer) {
+		l.wg.Add(1)
+		go func(w shared.Writer) {
+			defer l.wg.Done()
 			w.Write(entry)
 		}(wr)
 	}
 }
 
 // Logging methods
-func (l *Logger) Trace(msg string, args ...interface{}) {
-	l.log(LevelTrace, fmt.Sprintf(msg, args...), nil)
+func (l *Logger) Trace(msg string, args ...any) {
+	l.log(shared.LevelTrace, fmt.Sprintf(msg, args...), nil)
 }
 
-func (l *Logger) Debug(msg string, args ...interface{}) {
-	l.log(LevelDebug, fmt.Sprintf(msg, args...), nil)
+func (l *Logger) Debug(msg string, args ...any) {
+	l.log(shared.LevelDebug, fmt.Sprintf(msg, args...), nil)
 }
 
-func (l *Logger) Info(msg string, args ...interface{}) {
-	l.log(LevelInfo, fmt.Sprintf(msg, args...), nil)
+func (l *Logger) Info(msg string, args ...any) {
+	l.log(shared.LevelInfo, fmt.Sprintf(msg, args...), nil)
 }
 
-func (l *Logger) Warn(msg string, args ...interface{}) {
-	l.log(LevelWarn, fmt.Sprintf(msg, args...), nil)
+func (l *Logger) Warn(msg string, args ...any) {
+	l.log(shared.LevelWarn, fmt.Sprintf(msg, args...), nil)
 }
 
-func (l *Logger) Error(msg string, args ...interface{}) {
-	l.log(LevelError, fmt.Sprintf(msg, args...), nil)
+func (l *Logger) Error(msg string, args ...any) {
+	l.log(shared.LevelError, fmt.Sprintf(msg, args...), nil)
 }
 
-func (l *Logger) Fatal(msg string, args ...interface{}) {
-	l.log(LevelFatal, fmt.Sprintf(msg, args...), nil)
+func (l *Logger) Fatal(msg string, args ...any) {
+	l.log(shared.LevelFatal, fmt.Sprintf(msg, args...), nil)
 	os.Exit(1)
 }
 
-func (l *Logger) Panic(msg string, args ...interface{}) {
+func (l *Logger) Panic(msg string, args ...any) {
 	msg = fmt.Sprintf(msg, args...)
-	l.log(LevelPanic, msg, nil)
+	l.log(shared.LevelPanic, msg, nil)
 	panic(msg)
 }
 
 // Success is a convenience method for successful operations
-func (l *Logger) Success(msg string, args ...interface{}) {
-	l.log(LevelInfo, fmt.Sprintf(msg, args...), Fields{"type": "success"})
+func (l *Logger) Success(msg string, args ...any) {
+	l.log(shared.LevelInfo, fmt.Sprintf(msg, args...), shared.Fields{"type": "success"})
 }
 
 // Badge creates a custom badge log
-func (l *Logger) Badge(tag, msg string, color color.Color, args ...interface{}) {
-	l.log(LevelInfo, fmt.Sprintf(msg, args...), Fields{
+func (l *Logger) Badge(tag, msg string, color color.Color, args ...any) {
+	l.log(shared.LevelInfo, fmt.Sprintf(msg, args...), shared.Fields{
 		"badge":       tag,
 		"badge_color": color,
 	})
@@ -307,26 +352,28 @@ func (l *Logger) Close() error {
 }
 
 // Global functions that use the global logger
-func SetLevel(level Level)                     { GetLogger().SetLevel(level) }
+func SetLevel(level shared.Level)              { GetLogger().SetLevel(level) }
 func SetOutput(w io.Writer)                    { GetLogger().SetOutput(w) }
-func SetFormat(format Format)                  { GetLogger().SetFormat(format) }
+func SetFormat(format shared.Format)           { GetLogger().SetFormat(format) }
 func EnableTimestamp()                         { GetLogger().EnableTimestamp() }
 func DisableTimestamp()                        { GetLogger().DisableTimestamp() }
 func SetTheme(theme color.ColorTheme)          { GetLogger().SetTheme(theme) }
-func AddWriter(writer Writer)                  { GetLogger().AddWriter(writer) }
+func AddWriter(writer shared.Writer)           { GetLogger().AddWriter(writer) }
 func AddHook(hook Hook)                        { GetLogger().AddHook(hook) }
-func WithFields(fields Fields) *Context        { return GetLogger().WithFields(fields) }
+func WithFields(fields shared.Fields) *Context { return GetLogger().WithFields(fields) }
 func WithContext(ctx context.Context) *Context { return GetLogger().WithContext(ctx) }
 
-func Trace(msg string, args ...interface{})   { GetLogger().Trace(msg, args...) }
-func Debug(msg string, args ...interface{})   { GetLogger().Debug(msg, args...) }
-func Info(msg string, args ...interface{})    { GetLogger().Info(msg, args...) }
-func Warn(msg string, args ...interface{})    { GetLogger().Warn(msg, args...) }
-func Error(msg string, args ...interface{})   { GetLogger().Error(msg, args...) }
-func Fatal(msg string, args ...interface{})   { GetLogger().Fatal(msg, args...) }
-func Panic(msg string, args ...interface{})   { GetLogger().Panic(msg, args...) }
-func Success(msg string, args ...interface{}) { GetLogger().Success(msg, args...) }
+func Trace(msg string, args ...any)   { GetLogger().Trace(msg, args...) }
+func Debug(msg string, args ...any)   { GetLogger().Debug(msg, args...) }
+func Info(msg string, args ...any)    { GetLogger().Info(msg, args...) }
+func Warn(msg string, args ...any)    { GetLogger().Warn(msg, args...) }
+func Error(msg string, args ...any)   { GetLogger().Error(msg, args...) }
+func Fatal(msg string, args ...any)   { GetLogger().Fatal(msg, args...) }
+func Panic(msg string, args ...any)   { GetLogger().Panic(msg, args...) }
+func Success(msg string, args ...any) { GetLogger().Success(msg, args...) }
 
-func Badge(tag, msg string, color color.Color, args ...interface{}) {
+func Badge(tag, msg string, color color.Color, args ...any) {
 	GetLogger().Badge(tag, msg, color, args...)
 }
+
+func Flush() { GetLogger().Flush() }
