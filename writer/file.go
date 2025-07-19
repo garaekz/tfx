@@ -1,4 +1,4 @@
-package writers
+package writer
 
 import (
 	"fmt"
@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/garaekz/tfx/internal/core"
 )
 
 // FileWriter writes logs to files with rotation support
@@ -20,8 +22,8 @@ type FileWriter struct {
 
 // FileOptions configuration for file writer
 type FileOptions struct {
-	Level       Level
-	Format      Format
+	Level       core.Level
+	Format      core.Format
 	MaxSize     int64 // Maximum size in bytes before rotation
 	MaxBackups  int   // Maximum number of backup files to keep
 	MaxAge      int   // Maximum number of days to retain files
@@ -32,8 +34,8 @@ type FileOptions struct {
 // DefaultFileOptions returns sensible defaults for file writing
 func DefaultFileOptions() FileOptions {
 	return FileOptions{
-		Level:       LevelInfo,
-		Format:      FormatText,
+		Level:       core.LevelInfo,
+		Format:      core.FormatText,
 		MaxSize:     100 * 1024 * 1024, // 100MB
 		MaxBackups:  3,
 		MaxAge:      30, // 30 days
@@ -77,7 +79,7 @@ func NewFileWriter(filename string, opts FileOptions) (*FileWriter, error) {
 }
 
 // Write writes a log entry to file
-func (w *FileWriter) Write(entry *Entry) error {
+func (w *FileWriter) Write(entry *core.Entry) error {
 	if entry.Level < w.options.Level {
 		return nil
 	}
@@ -85,9 +87,9 @@ func (w *FileWriter) Write(entry *Entry) error {
 	// Format the entry
 	var output string
 	switch w.options.Format {
-	case FormatJSON:
+	case core.FormatJSON:
 		output = w.formatJSON(entry)
-	case FormatText:
+	case core.FormatText:
 		output = w.formatText(entry)
 	default:
 		output = w.formatText(entry)
@@ -230,7 +232,7 @@ func (w *FileWriter) cleanup() {
 }
 
 // formatJSON formats entry as JSON for file output
-func (w *FileWriter) formatJSON(entry *Entry) string {
+func (w *FileWriter) formatJSON(entry *core.Entry) string {
 	// Simplified JSON formatting - in real implementation use json.Marshal
 	parts := []string{
 		fmt.Sprintf(`"timestamp":"%s"`, entry.Timestamp.Format(time.RFC3339)),
@@ -255,7 +257,7 @@ func (w *FileWriter) formatJSON(entry *Entry) string {
 }
 
 // formatText formats entry as plain text for file output
-func (w *FileWriter) formatText(entry *Entry) string {
+func (w *FileWriter) formatText(entry *core.Entry) string {
 	var parts []string
 
 	// Timestamp

@@ -4,54 +4,45 @@ import (
 	"context"
 	"io"
 	"sync"
-	"time"
 
 	"github.com/garaekz/tfx/color"
+	"github.com/garaekz/tfx/internal/core"
 )
 
-// Level represents logging levels
-type Level int
+// Re-export common types from core package
+type Level = core.Level
+type Format = core.Format
+type BadgeStyle = core.BadgeStyle
+type Fields = core.Fields
+type Entry = core.Entry
+type CallerInfo = core.CallerInfo
+type Formatter = core.Formatter
+type Writer = core.Writer
+type Hook = core.Hook
 
 const (
-	LevelTrace Level = iota
-	LevelDebug
-	LevelInfo
-	LevelWarn
-	LevelError
-	LevelFatal
-	LevelPanic
+	LevelTrace = core.LevelTrace
+	LevelDebug = core.LevelDebug
+	LevelInfo  = core.LevelInfo
+	LevelWarn  = core.LevelWarn
+	LevelError = core.LevelError
+	LevelFatal = core.LevelFatal
+	LevelPanic = core.LevelPanic
 )
 
-// String returns string representation of level
-func (l Level) String() string {
-	switch l {
-	case LevelTrace:
-		return "TRACE"
-	case LevelDebug:
-		return "DEBUG"
-	case LevelInfo:
-		return "INFO"
-	case LevelWarn:
-		return "WARN"
-	case LevelError:
-		return "ERROR"
-	case LevelFatal:
-		return "FATAL"
-	case LevelPanic:
-		return "PANIC"
-	default:
-		return "UNKNOWN"
-	}
-}
-
-// Format represents output format
-type Format int
+const (
+	FormatBadge  = core.FormatBadge
+	FormatJSON   = core.FormatJSON
+	FormatText   = core.FormatText
+	FormatCustom = core.FormatCustom
+)
 
 const (
-	FormatBadge  Format = iota // [TAG] message (default)
-	FormatJSON                 // {"level":"info","msg":"..."}
-	FormatText                 // 2024-01-01 15:04:05 INFO message
-	FormatCustom               // User-defined format
+	BadgeStyleSquare = core.BadgeStyleSquare
+	BadgeStyleRound  = core.BadgeStyleRound
+	BadgeStyleArrow  = core.BadgeStyleArrow
+	BadgeStyleDot    = core.BadgeStyleDot
+	BadgeStyleCustom = core.BadgeStyleCustom
 )
 
 // Options represents logger configuration
@@ -105,62 +96,12 @@ func DefaultOptions() Options {
 	}
 }
 
-// BadgeStyle represents different badge appearances
-type BadgeStyle int
-
-const (
-	BadgeStyleSquare BadgeStyle = iota // [TAG]
-	BadgeStyleRound                    // (TAG)
-	BadgeStyleArrow                    // >TAG<
-	BadgeStyleDot                      // •TAG•
-	BadgeStyleCustom                   // User-defined
-)
-
 // Context represents a logging context with fields
 type Context struct {
 	logger *Logger
 	fields map[string]interface{}
 	ctx    context.Context
 }
-
-// Fields represents key-value pairs for structured logging
-type Fields map[string]interface{}
-
-// Entry represents a single log entry
-type Entry struct {
-	Level     Level
-	Message   string
-	Fields    Fields
-	Timestamp time.Time
-	Caller    *CallerInfo
-	Context   context.Context
-}
-
-// CallerInfo represents information about the calling function
-type CallerInfo struct {
-	File     string
-	Function string
-	Line     int
-}
-
-// Formatter defines the interface for custom formatters
-type Formatter interface {
-	Format(entry *Entry) ([]byte, error)
-}
-
-// Writer defines the interface for log writers
-type Writer interface {
-	Write(entry *Entry) error
-	Close() error
-}
-
-// MultiWriter allows writing to multiple destinations
-type MultiWriter struct {
-	writers []Writer
-}
-
-// Hook represents a function that can modify log entries
-type Hook func(entry *Entry) *Entry
 
 // Logger represents the main logger instance
 type Logger struct {
