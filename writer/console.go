@@ -1,4 +1,4 @@
-package writers
+package writer
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/garaekz/tfx/color"
+	"github.com/garaekz/tfx/internal/core"
 	"github.com/garaekz/tfx/terminal"
 )
 
@@ -21,13 +22,13 @@ type ConsoleWriter struct {
 
 // Options for console writer
 type Options struct {
-	Level        Level
-	Format       Format
+	Level        core.Level
+	Format       core.Format
 	Timestamp    bool
 	TimeFormat   string
 	Theme        color.ColorTheme
 	BadgeWidth   int
-	BadgeStyle   BadgeStyle
+	BadgeStyle   core.BadgeStyle
 	ShowCaller   bool
 	ForceColor   bool
 	DisableColor bool
@@ -51,18 +52,18 @@ func NewConsoleWriter(output io.Writer, opts Options) *ConsoleWriter {
 }
 
 // Write writes a log entry to console
-func (w *ConsoleWriter) Write(entry *Entry) error {
+func (w *ConsoleWriter) Write(entry *core.Entry) error {
 	if entry.Level < w.options.Level {
 		return nil
 	}
 
 	var output string
 	switch w.options.Format {
-	case FormatBadge:
+	case core.FormatBadge:
 		output = w.formatBadge(entry)
-	case FormatJSON:
+	case core.FormatJSON:
 		output = w.formatJSON(entry)
-	case FormatText:
+	case core.FormatText:
 		output = w.formatText(entry)
 	default:
 		output = w.formatBadge(entry)
@@ -76,7 +77,7 @@ func (w *ConsoleWriter) Write(entry *Entry) error {
 }
 
 // formatBadge formats entry as a badge log
-func (w *ConsoleWriter) formatBadge(entry *Entry) string {
+func (w *ConsoleWriter) formatBadge(entry *core.Entry) string {
 	var parts []string
 
 	// Timestamp
@@ -123,7 +124,7 @@ func (w *ConsoleWriter) formatBadge(entry *Entry) string {
 }
 
 // formatBadgeTag formats the badge/level part
-func (w *ConsoleWriter) formatBadgeTag(entry *Entry) string {
+func (w *ConsoleWriter) formatBadgeTag(entry *core.Entry) string {
 	var tag string
 	var tagColor color.Color
 
@@ -170,13 +171,13 @@ func (w *ConsoleWriter) padTag(tag string) string {
 // applyBadgeStyle applies the badge style
 func (w *ConsoleWriter) applyBadgeStyle(tag string) string {
 	switch w.options.BadgeStyle {
-	case BadgeStyleSquare:
+	case core.BadgeStyleSquare:
 		return fmt.Sprintf("[%s]", tag)
-	case BadgeStyleRound:
+	case core.BadgeStyleRound:
 		return fmt.Sprintf("(%s)", tag)
-	case BadgeStyleArrow:
+	case core.BadgeStyleArrow:
 		return fmt.Sprintf(">%s<", tag)
-	case BadgeStyleDot:
+	case core.BadgeStyleDot:
 		return fmt.Sprintf("•%s•", tag)
 	default:
 		return fmt.Sprintf("[%s]", tag)
@@ -184,21 +185,21 @@ func (w *ConsoleWriter) applyBadgeStyle(tag string) string {
 }
 
 // getLevelTag returns the tag for a level
-func (w *ConsoleWriter) getLevelTag(level Level) string {
+func (w *ConsoleWriter) getLevelTag(level core.Level) string {
 	switch level {
-	case LevelTrace:
+	case core.LevelTrace:
 		return "TRC"
-	case LevelDebug:
+	case core.LevelDebug:
 		return "DBG"
-	case LevelInfo:
+	case core.LevelInfo:
 		return "INFO"
-	case LevelWarn:
+	case core.LevelWarn:
 		return "WARN"
-	case LevelError:
+	case core.LevelError:
 		return "ERR"
-	case LevelFatal:
+	case core.LevelFatal:
 		return "FATAL"
-	case LevelPanic:
+	case core.LevelPanic:
 		return "PANIC"
 	default:
 		return "LOG"
@@ -206,21 +207,21 @@ func (w *ConsoleWriter) getLevelTag(level Level) string {
 }
 
 // getLevelColor returns the color for a level
-func (w *ConsoleWriter) getLevelColor(level Level) color.Color {
+func (w *ConsoleWriter) getLevelColor(level core.Level) color.Color {
 	switch level {
-	case LevelTrace:
+	case core.LevelTrace:
 		return color.NewANSI(8) // Dark gray
-	case LevelDebug:
+	case core.LevelDebug:
 		return w.options.Theme.Debug
-	case LevelInfo:
+	case core.LevelInfo:
 		return w.options.Theme.Info
-	case LevelWarn:
+	case core.LevelWarn:
 		return w.options.Theme.Warning
-	case LevelError:
+	case core.LevelError:
 		return w.options.Theme.Error
-	case LevelFatal:
+	case core.LevelFatal:
 		return color.NewRGB(255, 255, 255) // White on red bg
-	case LevelPanic:
+	case core.LevelPanic:
 		return color.NewRGB(255, 255, 255) // White on red bg
 	default:
 		return w.options.Theme.Info
@@ -228,7 +229,7 @@ func (w *ConsoleWriter) getLevelColor(level Level) color.Color {
 }
 
 // colorizeMessage applies color to the message based on level
-func (w *ConsoleWriter) colorizeMessage(entry *Entry, message string) string {
+func (w *ConsoleWriter) colorizeMessage(entry *core.Entry, message string) string {
 	// Check for success type
 	if msgType, ok := entry.Fields["type"].(string); ok && msgType == "success" {
 		return color.ApplyColor(message, w.options.Theme.Success.Render(w.getColorMode()))
@@ -236,9 +237,9 @@ func (w *ConsoleWriter) colorizeMessage(entry *Entry, message string) string {
 
 	// Apply subtle coloring based on level
 	switch entry.Level {
-	case LevelError, LevelFatal, LevelPanic:
+	case core.LevelError, core.LevelFatal, core.LevelPanic:
 		return color.ApplyColor(message, color.BrightRed)
-	case LevelWarn:
+	case core.LevelWarn:
 		return message // Keep message neutral for warnings
 	default:
 		return message // Keep message neutral for info/debug
@@ -246,7 +247,7 @@ func (w *ConsoleWriter) colorizeMessage(entry *Entry, message string) string {
 }
 
 // formatFields formats the fields for display
-func (w *ConsoleWriter) formatFields(fields Fields) string {
+func (w *ConsoleWriter) formatFields(fields core.Fields) string {
 	if len(fields) == 0 {
 		return ""
 	}
@@ -268,7 +269,7 @@ func (w *ConsoleWriter) formatFields(fields Fields) string {
 }
 
 // formatJSON formats entry as JSON (simple implementation)
-func (w *ConsoleWriter) formatJSON(entry *Entry) string {
+func (w *ConsoleWriter) formatJSON(entry *core.Entry) string {
 	// This is a simplified JSON formatter
 	// In a real implementation, you'd use json.Marshal
 	parts := []string{
@@ -294,7 +295,7 @@ func (w *ConsoleWriter) formatJSON(entry *Entry) string {
 }
 
 // formatText formats entry as plain text
-func (w *ConsoleWriter) formatText(entry *Entry) string {
+func (w *ConsoleWriter) formatText(entry *core.Entry) string {
 	var parts []string
 
 	// Timestamp
@@ -339,7 +340,7 @@ func (w *ConsoleWriter) getColorMode() color.Mode {
 	if !w.supportsColor() {
 		return color.ModeNoColor
 	}
-	return w.detector.GetMode()
+	return color.Mode(w.detector.GetMode())
 }
 
 func (w *ConsoleWriter) shortFilename(filename string) string {

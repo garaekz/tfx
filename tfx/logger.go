@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/garaekz/tfx/color"
+	writerpkg "github.com/garaekz/tfx/writer"
 )
 
 // Global logger instance
@@ -34,12 +35,31 @@ func New(opts Options) *Logger {
 	}
 
 	// Add default console writer
-	consoleWriter := NewConsoleWriter(opts.Output, opts)
+	cwOpts := writerpkg.Options{
+		Level:        opts.Level,
+		Format:       opts.Format,
+		Timestamp:    opts.Timestamp,
+		TimeFormat:   opts.TimeFormat,
+		Theme:        opts.Theme,
+		BadgeWidth:   opts.BadgeWidth,
+		BadgeStyle:   opts.BadgeStyle,
+		ShowCaller:   opts.ShowCaller,
+		ForceColor:   opts.ForceColor,
+		DisableColor: opts.DisableColor,
+	}
+	consoleWriter := writerpkg.NewConsoleWriter(opts.Output, cwOpts)
 	logger.AddWriter(consoleWriter)
 
 	// Add file writer if specified
 	if opts.LogFile != "" {
-		fileWriter, err := NewFileWriter(opts.LogFile, opts)
+		fwOpts := writerpkg.DefaultFileOptions()
+		fwOpts.Level = opts.FileLevel
+		fwOpts.Format = opts.Format
+		fwOpts.MaxSize = opts.MaxFileSize
+		fwOpts.MaxBackups = opts.MaxBackups
+		fwOpts.MaxAge = opts.MaxAge
+
+		fileWriter, err := writerpkg.NewFileWriter(opts.LogFile, fwOpts)
 		if err == nil {
 			logger.AddWriter(fileWriter)
 		}
@@ -75,9 +95,21 @@ func (l *Logger) SetOutput(w io.Writer) {
 	defer l.mu.Unlock()
 	l.options.Output = w
 	// Update console writer
-	for i, writer := range l.writers {
-		if cw, ok := writer.(*ConsoleWriter); ok {
-			l.writers[i] = NewConsoleWriter(w, l.options)
+	for i, wr := range l.writers {
+		if cw, ok := wr.(*writerpkg.ConsoleWriter); ok {
+			cwOpts := writerpkg.Options{
+				Level:        l.options.Level,
+				Format:       l.options.Format,
+				Timestamp:    l.options.Timestamp,
+				TimeFormat:   l.options.TimeFormat,
+				Theme:        l.options.Theme,
+				BadgeWidth:   l.options.BadgeWidth,
+				BadgeStyle:   l.options.BadgeStyle,
+				ShowCaller:   l.options.ShowCaller,
+				ForceColor:   l.options.ForceColor,
+				DisableColor: l.options.DisableColor,
+			}
+			l.writers[i] = writerpkg.NewConsoleWriter(w, cwOpts)
 			cw.Close()
 			break
 		}
@@ -209,10 +241,10 @@ func (l *Logger) log(level Level, msg string, fields Fields) {
 	writers := l.writers
 	l.mu.RUnlock()
 
-	for _, writer := range writers {
+	for _, wr := range writers {
 		go func(w Writer) {
 			w.Write(entry)
-		}(writer)
+		}(wr)
 	}
 }
 
