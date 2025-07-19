@@ -14,8 +14,8 @@ const (
 	TCGETS_EMBEDDED = 0x5400 // Some embedded systems (routers, IoT)
 )
 
-// DetectTerminal checks if fd is a terminal on Linux-based systems
-func DetectTerminal(fd uintptr) bool {
+// isTerminal checks if fd is a terminal on Linux-based systems
+func isTerminal(fd uintptr) bool {
 	// Try unix package constant first (most reliable)
 	if _, err := unix.IoctlGetTermios(int(fd), unix.TCGETS); err == nil {
 		return true
