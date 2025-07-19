@@ -6,8 +6,6 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-
-	"github.com/garaekz/lfx/internal/platform"
 )
 
 // Mode represents the capabilities of the output terminal
@@ -110,7 +108,7 @@ func (d *Detector) detectCapabilities() Mode {
 	}
 
 	// Check if output is a terminal
-	if !isTerminal(d.output) {
+	if !IsTerminal(d.output) {
 		return ModeNoColor
 	}
 
@@ -144,7 +142,7 @@ func (d *Detector) detectCapabilities() Mode {
 
 	// Check for Windows terminal capabilities
 	if runtime.GOOS == "windows" {
-		if platform.TryEnableANSI() {
+		if TryEnableANSI() {
 			return ModeANSI
 		}
 	}
@@ -181,14 +179,4 @@ func isColorDisabled() bool {
 	}
 
 	return false
-}
-
-// isTerminal checks if the output is a terminal
-func isTerminal(w io.Writer) bool {
-	switch v := w.(type) {
-	case *os.File:
-		return platform.IsTerminal(v.Fd())
-	default:
-		return false
-	}
 }

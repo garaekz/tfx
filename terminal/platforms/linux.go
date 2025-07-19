@@ -1,6 +1,6 @@
 //go:build linux || aix
 
-package platform
+package terminal
 
 import (
 	"runtime"
@@ -38,7 +38,7 @@ func isEmbeddedArch() bool {
 		runtime.GOARCH == "mips64" || runtime.GOARCH == "mips64le"
 }
 
-// tryEnableANSI is a no-op on Linux systems (ANSI is natively supported)
-func tryEnableANSI() bool {
+// enableANSI is a no-op on Linux systems (ANSI is natively supported)
+func enableANSI() bool {
 	return true
 }

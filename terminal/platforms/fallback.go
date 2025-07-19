@@ -1,6 +1,6 @@
 //go:build unix && !darwin && !linux && !aix
 
-package platform
+package terminal
 
 import "golang.org/x/sys/unix"
 
@@ -21,9 +21,9 @@ const (
 	QNX_TCGETA = 0x540A
 )
 
-// DetectTerminal checks if fd is a terminal on various Unix systems
+// isTerminal checks if fd is a terminal on various Unix systems
 // Covers all Unix systems not handled by macos.go, linux.go, or windows.go
-func DetectTerminal(fd uintptr) bool {
+func isTerminal(fd uintptr) bool {
 	// Try in order of likelihood:
 
 	// 1. BSD-style (FreeBSD, OpenBSD, NetBSD, DragonFly)
@@ -60,7 +60,7 @@ func DetectTerminal(fd uintptr) bool {
 	return false
 }
 
-// tryEnableANSI is a no-op on Unix systems (ANSI is natively supported)
-func tryEnableANSI() bool {
+// enableANSI is a no-op on Unix systems (ANSI is natively supported)
+func enableANSI() bool {
 	return true
 }

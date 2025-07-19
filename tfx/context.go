@@ -1,11 +1,11 @@
-package lfx
+package tfx
 
 import (
 	"context"
 	"fmt"
 	"os"
 
-	"github.com/garaekz/lfx/internal/color"
+	"github.com/garaekz/tfx/color"
 )
 
 // WithField adds a single field to the context

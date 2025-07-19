@@ -1,37 +1,37 @@
 package main
 
 import (
-	"github.com/garaekz/lfx"
+	"github.com/garaekz/tfx"
 )
 
 func main() {
 	// Show terminal capabilities
-	lfx.PrintCapabilities()
+	tfx.PrintCapabilities()
 
 	// Basic usage
-	lfx.Success("Server started successfully on port %d", 8080)
-	lfx.Info("Processing %d requests", 42)
-	lfx.Warn("Memory usage is at %d%%", 85)
-	lfx.Error("Failed to connect to database: %s", "connection timeout")
-	lfx.Debug("Debug info: user session %s", "abc123")
+	tfx.Success("Server started successfully on port %d", 8080)
+	tfx.Info("Processing %d requests", 42)
+	tfx.Warn("Memory usage is at %d%%", 85)
+	tfx.Error("Failed to connect to database: %s", "connection timeout")
+	tfx.Debug("Debug info: user session %s", "abc123")
 
 	// Custom badges
-	lfx.Badge("API", "Request processed in %dms", lfx.AnsiGreen, 150)
-	lfx.Badge("DB", "Query executed", lfx.AnsiBlue)
-	lfx.Badge("CACHE", "Hit ratio: %.2f%%", lfx.AnsiYellow, 89.5)
+	tfx.Badge("API", "Request processed in %dms", tfx.AnsiGreen, 150)
+	tfx.Badge("DB", "Query executed", tfx.AnsiBlue)
+	tfx.Badge("CACHE", "Hit ratio: %.2f%%", tfx.AnsiYellow, 89.5)
 
 	// Background colors
-	lfx.BadgeBg("CRITICAL", "System overload detected", lfx.AnsiWhite, lfx.BgRed)
-	// lfx.BadgeBg("TODO", "Implement user authentication", lfx.AnsiBlack, lfx.BgYellow)
+	tfx.BadgeBg("CRITICAL", "System overload detected", tfx.AnsiWhite, tfx.BgRed)
+	// tfx.BadgeBg("TODO", "Implement user authentication", tfx.AnsiBlack, tfx.BgYellow)
 
 	// Conditional coloring
-	if lfx.SupportsColor() {
-		lfx.Info("Your terminal supports colors! 🎨")
+	if tfx.SupportsColor() {
+		tfx.Info("Your terminal supports colors! 🎨")
 	} else {
-		lfx.Info("No color support detected")
+		tfx.Info("No color support detected")
 	}
 
 	// Manual colorization
-	text := lfx.Colorize("This text is colored", lfx.AnsiMagenta)
-	lfx.Info("Message: %s", text)
+	text := tfx.Colorize("This text is colored", tfx.AnsiMagenta)
+	tfx.Info("Message: %s", text)
 }

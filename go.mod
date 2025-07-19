@@ -1,4 +1,4 @@
-module github.com/garaekz/lfx
+module github.com/garaekz/tfx
 
 go 1.24.5
 

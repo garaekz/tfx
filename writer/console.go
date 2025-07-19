@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/garaekz/lfx/internal/color"
-	"github.com/garaekz/lfx/internal/terminal"
+	"github.com/garaekz/tfx/color"
+	"github.com/garaekz/tfx/terminal"
 )
 
 // ConsoleWriter writes formatted logs to console/terminal

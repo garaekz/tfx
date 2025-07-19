@@ -1,6 +1,6 @@
 //go:build windows
 
-package platform
+package terminal
 
 import (
 	"os"
@@ -15,15 +15,15 @@ var (
 	procSetConsoleMode = kernel32.NewProc("SetConsoleMode")
 )
 
-// DetectTerminal checks if fd is a terminal on Windows
-func DetectTerminal(fd uintptr) bool {
+// isTerminal checks if fd is a terminal on Windows
+func isTerminal(fd uintptr) bool {
 	var st uint32
 	r, _, e := syscall.SyscallN(procGetConsoleMode.Addr(), fd, uintptr(unsafe.Pointer(&st)))
 	return r != 0 && e == 0
 }
 
-// tryEnableANSI enables ANSI escape sequence support on Windows 10+
-func tryEnableANSI() bool {
+// enableANSI enables ANSI escape sequence support on Windows 10+
+func enableANSI() bool {
 	stdout := os.Stdout.Fd()
 	var mode uint32
 

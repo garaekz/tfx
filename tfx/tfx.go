@@ -1,4 +1,4 @@
-package lfx
+package tfx
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/garaekz/lfx/internal/terminal"
+	"github.com/garaekz/tfx/terminal"
 )
 
 // ANSI escape codes

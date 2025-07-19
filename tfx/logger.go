@@ -1,4 +1,4 @@
-package lfx
+package tfx
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/garaekz/lfx/internal/color"
+	"github.com/garaekz/tfx/color"
 )
 
 // Global logger instance
