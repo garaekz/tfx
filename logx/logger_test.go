@@ -113,7 +113,7 @@ func TestGlobalFunctions_Badge(t *testing.T) {
 	opts.BadgeWidth = 4
 
 	Configure(opts)
-	Badge("TEST", "badge message", color.NewHex("#FF5733"))
+	Badge("TEST", "badge message", color.Hex("#FF5733"))
 	time.Sleep(10 * time.Millisecond)
 
 	got := strings.TrimSpace(buf.String())

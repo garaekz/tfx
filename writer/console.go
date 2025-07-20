@@ -84,7 +84,7 @@ func (w *ConsoleWriter) formatBadge(entry *Entry) string {
 	if w.options.Timestamp {
 		timestamp := entry.Timestamp.Format(w.options.TimeFormat)
 		if w.supportsColor() {
-			timestamp = color.ApplyColor(timestamp, color.BrightBlack)
+			timestamp = color.Style(timestamp, color.ColorBrightBlack)
 		}
 		parts = append(parts, fmt.Sprintf("[%s]", timestamp))
 	}
@@ -97,7 +97,7 @@ func (w *ConsoleWriter) formatBadge(entry *Entry) string {
 	if w.options.ShowCaller && entry.Caller != nil {
 		caller := fmt.Sprintf("%s:%d", w.shortFilename(entry.Caller.File), entry.Caller.Line)
 		if w.supportsColor() {
-			caller = color.ApplyColor(caller, color.BrightBlack)
+			caller = color.Style(caller, color.ColorBrightBlack)
 		}
 		parts = append(parts, fmt.Sprintf("[%s]", caller))
 	}
@@ -114,7 +114,7 @@ func (w *ConsoleWriter) formatBadge(entry *Entry) string {
 		fieldsStr := w.formatFields(entry.Fields)
 		if fieldsStr != "" {
 			if w.supportsColor() {
-				fieldsStr = color.ApplyColor(fieldsStr, color.BrightBlack)
+				fieldsStr = color.Style(fieldsStr, color.ColorBrightBlack)
 			}
 			parts = append(parts, fieldsStr)
 		}
@@ -210,7 +210,7 @@ func (w *ConsoleWriter) getLevelTag(level Level) string {
 func (w *ConsoleWriter) getLevelColor(level Level) color.Color {
 	switch level {
 	case LevelTrace:
-		return color.NewANSI(8) // Dark gray
+		return color.ANSI(8) // Dark gray
 	case LevelDebug:
 		return w.options.Theme.Debug
 	case LevelInfo:
@@ -220,9 +220,9 @@ func (w *ConsoleWriter) getLevelColor(level Level) color.Color {
 	case LevelError:
 		return w.options.Theme.Error
 	case LevelFatal:
-		return color.NewRGB(255, 255, 255) // White on red bg
+		return color.RGB(255, 255, 255) // White on red bg
 	case LevelPanic:
-		return color.NewRGB(255, 255, 255) // White on red bg
+		return color.RGB(255, 255, 255) // White on red bg
 	default:
 		return w.options.Theme.Info
 	}
@@ -232,13 +232,13 @@ func (w *ConsoleWriter) getLevelColor(level Level) color.Color {
 func (w *ConsoleWriter) colorizeMessage(entry *Entry, message string) string {
 	// Check for success type
 	if msgType, ok := entry.Fields["type"].(string); ok && msgType == "success" {
-		return color.ApplyColor(message, w.options.Theme.Success.Render(w.getColorMode()))
+		return color.Style(message, w.options.Theme.Success)
 	}
 
 	// Apply subtle coloring based on level
 	switch entry.Level {
 	case LevelError, LevelFatal, LevelPanic:
-		return color.ApplyColor(message, color.BrightRed)
+		return color.Style(message, color.ColorBrightRed)
 	case LevelWarn:
 		return message // Keep message neutral for warnings
 	default:
