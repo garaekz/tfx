@@ -7,7 +7,7 @@ GO_TEST_FLAGS := -covermode=atomic -coverpkg=./... -coverprofile=coverage.out
 GO_RACE_FLAGS := -race
 GO_VERBOSE    := -v
 
-.PHONY: test test-verbose test-race coverage clean
+.PHONY: test test-verbose test-race coverage clean demo build-demo
 
 test:
 	go test ./... $(GO_TEST_FLAGS)
@@ -23,3 +23,11 @@ coverage:
 
 clean:
 	rm -f coverage.out
+	rm -f bin/demo
+
+build-demo:
+	mkdir -p bin
+	go build -o bin/demo ./cmd/demo
+
+demo: build-demo
+	./bin/demo

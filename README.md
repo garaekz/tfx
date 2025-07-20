@@ -100,9 +100,19 @@ spinner.Success("Data loaded!")
 
 ## 🖼️ Live Preview
 
-[![asciicast](https://asciinema.org/a/0Z6G1oHyPDlzuhkmKnIdvB5VF.svg)](https://asciinema.org/a/0Z6G1oHyPDlzuhkmKnIdvB5VF)
+See TFX in action with the interactive demo:
 
-> Replace with a real recording link when ready
+```bash
+# Build and run the demo
+make demo
+
+# Or run specific demonstrations
+./bin/demo progress    # Progress bars showcase
+./bin/demo color       # Color system showcase  
+./bin/demo spinner     # Spinners showcase
+./bin/demo multipath   # Multipath API showcase
+./bin/demo all         # Run all demonstrations
+```
 
 ---
 
