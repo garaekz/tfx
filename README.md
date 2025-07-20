@@ -1,0 +1,149 @@
+# TFX
+
+> Elegant terminal effects & structured output for Go CLIs — composable, fast, and developer-first.
+
+---
+
+## ✨ What is TFX?
+
+**TFX → TermFX** (short for _Terminal Effects_) is a modular Go toolkit for building expressive, styled, and structured terminal output — without the verbosity and fragmentation of typical Go terminal libraries.
+
+It is _not_ a TUI framework. It is a low-friction, highly composable set of tools for CLIs and utilities that need more than just `fmt.Println`, but less than `bubbletea`.
+
+---
+
+## 🤔 When should you use TFX?
+
+| Tool          | Use Case                               |
+| ------------- | -------------------------------------- |
+| `fmt.Println` | You don’t care about styling/logging   |
+| `log/slog`    | You want structured logs, no styling   |
+| `TFX`         | You want structure _and_ style ✨      |
+| `bubbletea`   | You’re building a full interactive TUI |
+
+---
+
+## 🧠 TFX Principles
+
+- 💎 _Multi-path API_: same engine, multiple ways to use it.
+- 🚫 _No reflection, no runtime surprises_.
+- 🧰 _Structured logs with color and context_.
+- 🧪 _Built for testing_: capture logs, inject writers.
+- 🎨 _Themeable by design_: ANSI + semantic palettes.
+- 🧱 _Minimal dependencies_: No third-party bloat.
+
+---
+
+## 🔥 Features
+
+- Unified color system with support for:
+
+  - ANSI
+  - 256-color
+  - TrueColor (24-bit)
+  - Semantic palettes & themes (Dracula, Nord, GitHub, Tailwind)
+
+- Structured logging with:
+
+  - Badge-style tags (\[INFO], \[ERR], etc)
+  - Contextual fields
+  - Multi-writer support (console + file rotation)
+  - JSON, text, and badge formats
+
+- Terminal capability detection:
+
+  - Per-OS fallbacks
+  - Unicode/ANSI support
+  - CI-awareness, `NO_COLOR`, etc
+
+- Progress bars and spinners with smart rendering
+- Internal `share/` helpers: `OptionSet`, `Overload` (standardized pattern)
+
+---
+
+## 📦 Packages
+
+| Package           | Description                                               |
+| ----------------- | --------------------------------------------------------- |
+| `color/`          | Core color system: hex, RGB, ANSI, themes, rendering      |
+| `terminal/`       | Terminal detection and capability inference               |
+| `logx/`           | Structured, badge-style logging with writers              |
+| `progress/`       | Spinners and progress bars with auto-capability rendering |
+| `writers/`        | Console & file writers with rotation and theming          |
+| `internal/share/` | Internal DX helpers (option sets, overloads, conventions) |
+
+---
+
+## 🚀 Quickstart
+
+```go
+import "github.com/garaekz/tfx/logx"
+
+func main() {
+    logx.Success("Server started on port %d", 8080)
+    logx.Badge("DB", "Connected to postgres", color.MaterialGreen)
+}
+```
+
+Use a spinner:
+
+```go
+import "github.com/garaekz/tfx/progress"
+
+spinner := progress.NewSpinner("Loading data...")
+spinner.Start()
+// do something...
+spinner.Success("Data loaded!")
+```
+
+---
+
+## 🖼️ Live Preview
+
+[![asciicast](https://asciinema.org/a/0Z6G1oHyPDlzuhkmKnIdvB5VF.svg)](https://asciinema.org/a/0Z6G1oHyPDlzuhkmKnIdvB5VF)
+
+> Replace with a real recording link when ready
+
+---
+
+## 🧱 Philosophy
+
+> "If there's only one way to use it, it's not the right way."
+
+TFX promotes a **multi-entry design** for each API:
+
+```go
+logx.Success("Done!")                            // 1. Quick default
+logger := logx.New(...)
+logger.WithFields(...).Info("custom")            // 2. Instantiated style
+logx.If(err).As(logx.WARN).Msg("warn msg")       // 3. DSL / fluent
+```
+
+This consistency is achieved via internal helpers like `Overload()` and `Option[T]`.
+
+---
+
+## 📚 Docs
+
+- [VISION.md](./VISION.md) – project intent and market gap
+- [DESIGN_GUIDELINES.md](./DESIGN_GUIDELINES.md) – API conventions and patterns
+- [ROADMAP.md](./ROADMAP.md) – current status and future plans
+- [MULTIPATH.md](./MULTIPATH.md) – why TermFX APIs support multiple entry paths
+
+---
+
+## 🧪 Status
+
+TFX is under active development. Use at your own risk until `v1.0.0` is tagged.
+
+---
+
+## 📜 License
+
+MIT
+
+---
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/garaekz/tfx)](https://goreportcard.com/report/github.com/garaekz/tfx)
+
+> Built with ☕ and 💢 by [@garaekz](https://github.com/garaekz)
