@@ -252,6 +252,10 @@ func (s *Spinner) spin() {
 			return
 		default:
 			s.mu.Lock()
+			if !s.active {
+				s.mu.Unlock()
+				return
+			}
 			frame := s.frames[i%len(s.frames)]
 
 			// Apply effects if enabled

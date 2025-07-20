@@ -4,14 +4,38 @@ import (
 	"bytes"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/garaekz/tfx/color"
 )
 
+type safeBuffer struct {
+	buf bytes.Buffer
+	mu  sync.Mutex
+}
+
+func (s *safeBuffer) Write(p []byte) (n int, err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.buf.Write(p)
+}
+
+func (s *safeBuffer) String() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.buf.String()
+}
+
+func (s *safeBuffer) Reset() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.buf.Reset()
+}
+
 func TestLogger_Info(t *testing.T) {
-	buf := &bytes.Buffer{}
+	buf := &safeBuffer{}
 	opts := DefaultOptions()
 	opts.Output = buf
 	opts.Timestamp = false
@@ -29,8 +53,9 @@ func TestLogger_Info(t *testing.T) {
 		t.Errorf("unexpected output: %q != %q", got, want)
 	}
 }
+
 func TestGlobalFunctions_Info(t *testing.T) {
-	buf := &bytes.Buffer{}
+	buf := &safeBuffer{}
 	opts := DefaultOptions()
 	opts.Output = buf
 	opts.Timestamp = false
@@ -49,7 +74,7 @@ func TestGlobalFunctions_Info(t *testing.T) {
 }
 
 func TestGlobalFunctions_SetLevel(t *testing.T) {
-	buf := &bytes.Buffer{}
+	buf := &safeBuffer{}
 	opts := DefaultOptions()
 	opts.Output = buf
 	opts.Timestamp = false
@@ -67,7 +92,7 @@ func TestGlobalFunctions_SetLevel(t *testing.T) {
 }
 
 func TestGlobalFunctions_SetOutput(t *testing.T) {
-	buf := &bytes.Buffer{}
+	buf := &safeBuffer{}
 	opts := DefaultOptions()
 	opts.Output = os.Stdout // set to default first
 	opts.Timestamp = false
@@ -87,7 +112,7 @@ func TestGlobalFunctions_SetOutput(t *testing.T) {
 }
 
 func TestGlobalFunctions_Success(t *testing.T) {
-	buf := &bytes.Buffer{}
+	buf := &safeBuffer{}
 	opts := DefaultOptions()
 	opts.Output = buf
 	opts.Timestamp = false
@@ -105,7 +130,7 @@ func TestGlobalFunctions_Success(t *testing.T) {
 }
 
 func TestGlobalFunctions_Badge(t *testing.T) {
-	buf := &bytes.Buffer{}
+	buf := &safeBuffer{}
 	opts := DefaultOptions()
 	opts.Output = buf
 	opts.Timestamp = false
@@ -123,7 +148,7 @@ func TestGlobalFunctions_Badge(t *testing.T) {
 }
 
 func TestGlobalFunctions_EnableDisableTimestamp(t *testing.T) {
-	buf := &bytes.Buffer{}
+	buf := &safeBuffer{}
 	opts := DefaultOptions()
 	opts.Output = buf
 	opts.Timestamp = false
