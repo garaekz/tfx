@@ -313,7 +313,7 @@ func TestNewThemeFromPalette(t *testing.T) {
 	// Create a simple palette for testing
 	palette := color.Palette{
 		"green": color.MaterialGreen,
-		"gray":  color.ANSI(8),
+		"gray":  color.NewANSI(8), // Gray
 		"blue":  color.MaterialBlue,
 	}
 
@@ -327,7 +327,7 @@ func TestNewThemeFromPalette(t *testing.T) {
 		t.Error("expected CompleteColor to be MaterialGreen from palette")
 	}
 
-	if theme.IncompleteColor != color.ANSI(8) {
+	if theme.IncompleteColor != color.NewANSI(8) {
 		t.Error("expected IncompleteColor to be gray from palette")
 	}
 

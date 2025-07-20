@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/garaekz/tfx/color"
-	. "github.com/garaekz/tfx/internal/shared"
+	. "github.com/garaekz/tfx/internal/share"
 )
 
 func TestConsoleWriter_Write(t *testing.T) {

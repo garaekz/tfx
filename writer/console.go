@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/garaekz/tfx/color"
-	. "github.com/garaekz/tfx/internal/shared"
+	. "github.com/garaekz/tfx/internal/share"
 	"github.com/garaekz/tfx/terminal"
 )
 
@@ -210,7 +210,7 @@ func (w *ConsoleWriter) getLevelTag(level Level) string {
 func (w *ConsoleWriter) getLevelColor(level Level) color.Color {
 	switch level {
 	case LevelTrace:
-		return color.ANSI(8) // Dark gray
+		return color.NewANSI(8) // Dark gray
 	case LevelDebug:
 		return w.options.Theme.Debug
 	case LevelInfo:

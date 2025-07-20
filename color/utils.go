@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/garaekz/tfx/internal/shared"
+	"github.com/garaekz/tfx/internal/share"
 )
 
 // StyleConfig provides structured configuration for text styling
@@ -41,80 +41,80 @@ func StyleBg(text string, fg, bg Color) string {
 }
 
 // 2. INSTANTIATED: Config struct
-func NewStyle(cfg StyleConfig, opts ...shared.Option[StyleConfig]) string {
-	shared.ApplyOptions(&cfg, opts...)
+func NewStyle(cfg StyleConfig, opts ...share.Option[StyleConfig]) string {
+	share.ApplyOptions(&cfg, opts...)
 	return renderStyledText(cfg)
 }
 
-// 3. FLUENT: Functional options
-func NewStyleWith(opts ...shared.Option[StyleConfig]) string {
+// 3. FLUENT: Functional options + DSL chaining support
+func NewStyleWith(opts ...share.Option[StyleConfig]) string {
 	cfg := DefaultStyleConfig()
 	return NewStyle(cfg, opts...)
 }
 
 // --- FUNCTIONAL OPTIONS ---
 
-func WithText(text string) shared.Option[StyleConfig] {
+func WithText(text string) share.Option[StyleConfig] {
 	return func(cfg *StyleConfig) {
 		cfg.Text = text
 	}
 }
 
-func WithForeground(color Color) shared.Option[StyleConfig] {
+func WithForeground(color Color) share.Option[StyleConfig] {
 	return func(cfg *StyleConfig) {
 		cfg.ForeGround = color
 	}
 }
 
-func WithBg(color Color) shared.Option[StyleConfig] {
+func WithBg(color Color) share.Option[StyleConfig] {
 	return func(cfg *StyleConfig) {
 		cfg.Background = color
 	}
 }
 
-func WithBold() shared.Option[StyleConfig] {
+func WithBold() share.Option[StyleConfig] {
 	return func(cfg *StyleConfig) {
 		cfg.Bold = true
 	}
 }
 
-func WithDim() shared.Option[StyleConfig] {
+func WithDim() share.Option[StyleConfig] {
 	return func(cfg *StyleConfig) {
 		cfg.Dim = true
 	}
 }
 
-func WithItalic() shared.Option[StyleConfig] {
+func WithItalic() share.Option[StyleConfig] {
 	return func(cfg *StyleConfig) {
 		cfg.Italic = true
 	}
 }
 
-func WithUnderline() shared.Option[StyleConfig] {
+func WithUnderline() share.Option[StyleConfig] {
 	return func(cfg *StyleConfig) {
 		cfg.Underline = true
 	}
 }
 
-func WithBlink() shared.Option[StyleConfig] {
+func WithBlink() share.Option[StyleConfig] {
 	return func(cfg *StyleConfig) {
 		cfg.Blink = true
 	}
 }
 
-func WithReverse() shared.Option[StyleConfig] {
+func WithReverse() share.Option[StyleConfig] {
 	return func(cfg *StyleConfig) {
 		cfg.Reverse = true
 	}
 }
 
-func WithStrike() shared.Option[StyleConfig] {
+func WithStrike() share.Option[StyleConfig] {
 	return func(cfg *StyleConfig) {
 		cfg.Strike = true
 	}
 }
 
-func WithStyleMode(mode Mode) shared.Option[StyleConfig] {
+func WithStyleMode(mode Mode) share.Option[StyleConfig] {
 	return func(cfg *StyleConfig) {
 		cfg.Mode = mode
 	}

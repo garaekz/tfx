@@ -6,15 +6,15 @@ import (
 	"sync"
 
 	"github.com/garaekz/tfx/color"
-	"github.com/garaekz/tfx/internal/shared"
+	"github.com/garaekz/tfx/internal/share"
 )
 
 // LogOptions represents logger configuration
 type LogOptions struct {
 	// Output settings
 	Output     io.Writer
-	Level      shared.Level
-	Format     shared.Format
+	Level      share.Level
+	Format     share.Format
 	Timestamp  bool
 	TimeFormat string
 
@@ -26,35 +26,35 @@ type LogOptions struct {
 
 	// Badge settings
 	BadgeWidth  int
-	BadgeStyle  shared.BadgeStyle
+	BadgeStyle  share.BadgeStyle
 	ShowCaller  bool
 	CallerDepth int
 
 	// File output
 	LogFile     string
-	FileLevel   shared.Level
+	FileLevel   share.Level
 	MaxFileSize int64
 	MaxBackups  int
 	MaxAge      int
 
 	// Custom formatter
-	CustomFormatter shared.Formatter
+	CustomFormatter share.Formatter
 }
 
 // Hook represents a function that can modify log entries
-type Hook func(entry *shared.Entry) *shared.Entry
+type Hook func(entry *share.Entry) *share.Entry
 
 // DefaultOptions returns sensible defaults
 func DefaultOptions() LogOptions {
 	return LogOptions{
-		Level:       shared.LevelInfo,
-		Format:      shared.FormatBadge,
+		Level:       share.LevelInfo,
+		Format:      share.FormatBadge,
 		Timestamp:   false,
 		TimeFormat:  "2006-01-02 15:04:05",
 		ColorMode:   color.ModeANSI,
 		Theme:       color.DefaultTheme,
 		BadgeWidth:  5,
-		BadgeStyle:  shared.BadgeStyleSquare,
+		BadgeStyle:  share.BadgeStyleSquare,
 		ShowCaller:  false,
 		CallerDepth: 3,
 		MaxFileSize: 100 * 1024 * 1024, // 100MB
@@ -73,7 +73,7 @@ type Context struct {
 // Logger represents the main logger instance
 type Logger struct {
 	options LogOptions
-	writers []shared.Writer
+	writers []share.Writer
 	hooks   []Hook
 	mu      sync.RWMutex
 	ctx     context.Context

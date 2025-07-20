@@ -1,6 +1,6 @@
 package color
 
-import "github.com/garaekz/tfx/internal/shared"
+import "github.com/garaekz/tfx/internal/share"
 
 // Palette represents a collection of named colors
 type Palette map[string]Color
@@ -27,26 +27,26 @@ func BasicPalette() Palette {
 }
 
 // 2. INSTANTIATED: Config struct
-func NewPalette(cfg PaletteConfig, opts ...shared.Option[PaletteConfig]) Palette {
-	shared.ApplyOptions(&cfg, opts...)
+func NewPalette(cfg PaletteConfig, opts ...share.Option[PaletteConfig]) Palette {
+	share.ApplyOptions(&cfg, opts...)
 	return Palette(cfg.Colors)
 }
 
-// 3. FLUENT: Functional options
-func NewPaletteWith(opts ...shared.Option[PaletteConfig]) Palette {
+// 3. FLUENT: Functional options + DSL chaining support
+func NewPaletteWith(opts ...share.Option[PaletteConfig]) Palette {
 	cfg := DefaultPaletteConfig()
 	return NewPalette(cfg, opts...)
 }
 
 // --- FUNCTIONAL OPTIONS ---
 
-func WithPaletteName(name string) shared.Option[PaletteConfig] {
+func WithPaletteName(name string) share.Option[PaletteConfig] {
 	return func(cfg *PaletteConfig) {
 		cfg.Name = name
 	}
 }
 
-func WithColors(colors map[string]Color) shared.Option[PaletteConfig] {
+func WithColors(colors map[string]Color) share.Option[PaletteConfig] {
 	return func(cfg *PaletteConfig) {
 		if cfg.Colors == nil {
 			cfg.Colors = make(map[string]Color)
@@ -57,7 +57,7 @@ func WithColors(colors map[string]Color) shared.Option[PaletteConfig] {
 	}
 }
 
-func WithColor(name string, color Color) shared.Option[PaletteConfig] {
+func WithColor(name string, color Color) share.Option[PaletteConfig] {
 	return func(cfg *PaletteConfig) {
 		if cfg.Colors == nil {
 			cfg.Colors = make(map[string]Color)
@@ -105,24 +105,24 @@ func (p Palette) Merge(other Palette) Palette {
 // Basic Colors (using Color struct)
 var (
 	// Standard ANSI colors
-	ColorBlack   = ANSI(0).WithName("black")
-	ColorRed     = ANSI(1).WithName("red")
-	ColorGreen   = ANSI(2).WithName("green")
-	ColorYellow  = ANSI(3).WithName("yellow")
-	ColorBlue    = ANSI(4).WithName("blue")
-	ColorMagenta = ANSI(5).WithName("magenta")
-	ColorCyan    = ANSI(6).WithName("cyan")
-	ColorWhite   = ANSI(7).WithName("white")
+	ColorBlack   = NewANSI(0).WithName("black")
+	ColorRed     = NewANSI(1).WithName("red")
+	ColorGreen   = NewANSI(2).WithName("green")
+	ColorYellow  = NewANSI(3).WithName("yellow")
+	ColorBlue    = NewANSI(4).WithName("blue")
+	ColorMagenta = NewANSI(5).WithName("magenta")
+	ColorCyan    = NewANSI(6).WithName("cyan")
+	ColorWhite   = NewANSI(7).WithName("white")
 
 	// Bright ANSI colors
-	ColorBrightBlack   = ANSI(8).WithName("bright_black")
-	ColorBrightRed     = ANSI(9).WithName("bright_red")
-	ColorBrightGreen   = ANSI(10).WithName("bright_green")
-	ColorBrightYellow  = ANSI(11).WithName("bright_yellow")
-	ColorBrightBlue    = ANSI(12).WithName("bright_blue")
-	ColorBrightMagenta = ANSI(13).WithName("bright_magenta")
-	ColorBrightCyan    = ANSI(14).WithName("bright_cyan")
-	ColorBrightWhite   = ANSI(15).WithName("bright_white")
+	ColorBrightBlack   = NewANSI(8).WithName("bright_black")
+	ColorBrightRed     = NewANSI(9).WithName("bright_red")
+	ColorBrightGreen   = NewANSI(10).WithName("bright_green")
+	ColorBrightYellow  = NewANSI(11).WithName("bright_yellow")
+	ColorBrightBlue    = NewANSI(12).WithName("bright_blue")
+	ColorBrightMagenta = NewANSI(13).WithName("bright_magenta")
+	ColorBrightCyan    = NewANSI(14).WithName("bright_cyan")
+	ColorBrightWhite   = NewANSI(15).WithName("bright_white")
 
 	// Semantic colors
 	ColorSuccess = ColorBrightGreen.WithName("success")
@@ -134,91 +134,91 @@ var (
 
 // Material Design Colors
 var (
-	MaterialRed        = Hex("#F44336").WithName("material_red")
-	MaterialPink       = Hex("#E91E63").WithName("material_pink")
-	MaterialPurple     = Hex("#9C27B0").WithName("material_purple")
-	MaterialDeepPurple = Hex("#673AB7").WithName("material_deep_purple")
-	MaterialIndigo     = Hex("#3F51B5").WithName("material_indigo")
-	MaterialBlue       = Hex("#2196F3").WithName("material_blue")
-	MaterialLightBlue  = Hex("#03A9F4").WithName("material_light_blue")
-	MaterialCyan       = Hex("#00BCD4").WithName("material_cyan")
-	MaterialTeal       = Hex("#009688").WithName("material_teal")
-	MaterialGreen      = Hex("#4CAF50").WithName("material_green")
-	MaterialLightGreen = Hex("#8BC34A").WithName("material_light_green")
-	MaterialLime       = Hex("#CDDC39").WithName("material_lime")
-	MaterialYellow     = Hex("#FFEB3B").WithName("material_yellow")
-	MaterialAmber      = Hex("#FFC107").WithName("material_amber")
-	MaterialOrange     = Hex("#FF9800").WithName("material_orange")
-	MaterialDeepOrange = Hex("#FF5722").WithName("material_deep_orange")
+	MaterialRed        = NewHex("#F44336").WithName("material_red")
+	MaterialPink       = NewHex("#E91E63").WithName("material_pink")
+	MaterialPurple     = NewHex("#9C27B0").WithName("material_purple")
+	MaterialDeepPurple = NewHex("#673AB7").WithName("material_deep_purple")
+	MaterialIndigo     = NewHex("#3F51B5").WithName("material_indigo")
+	MaterialBlue       = NewHex("#2196F3").WithName("material_blue")
+	MaterialLightBlue  = NewHex("#03A9F4").WithName("material_light_blue")
+	MaterialCyan       = NewHex("#00BCD4").WithName("material_cyan")
+	MaterialTeal       = NewHex("#009688").WithName("material_teal")
+	MaterialGreen      = NewHex("#4CAF50").WithName("material_green")
+	MaterialLightGreen = NewHex("#8BC34A").WithName("material_light_green")
+	MaterialLime       = NewHex("#CDDC39").WithName("material_lime")
+	MaterialYellow     = NewHex("#FFEB3B").WithName("material_yellow")
+	MaterialAmber      = NewHex("#FFC107").WithName("material_amber")
+	MaterialOrange     = NewHex("#FF9800").WithName("material_orange")
+	MaterialDeepOrange = NewHex("#FF5722").WithName("material_deep_orange")
 )
 
 // Tailwind CSS Colors
 var (
-	TailwindRed     = Hex("#EF4444").WithName("tailwind_red")
-	TailwindOrange  = Hex("#F97316").WithName("tailwind_orange")
-	TailwindAmber   = Hex("#F59E0B").WithName("tailwind_amber")
-	TailwindYellow  = Hex("#EAB308").WithName("tailwind_yellow")
-	TailwindLime    = Hex("#84CC16").WithName("tailwind_lime")
-	TailwindGreen   = Hex("#22C55E").WithName("tailwind_green")
-	TailwindEmerald = Hex("#10B981").WithName("tailwind_emerald")
-	TailwindTeal    = Hex("#14B8A6").WithName("tailwind_teal")
-	TailwindCyan    = Hex("#06B6D4").WithName("tailwind_cyan")
-	TailwindSky     = Hex("#0EA5E9").WithName("tailwind_sky")
-	TailwindBlue    = Hex("#3B82F6").WithName("tailwind_blue")
-	TailwindIndigo  = Hex("#6366F1").WithName("tailwind_indigo")
-	TailwindViolet  = Hex("#8B5CF6").WithName("tailwind_violet")
-	TailwindPurple  = Hex("#A855F7").WithName("tailwind_purple")
-	TailwindFuchsia = Hex("#D946EF").WithName("tailwind_fuchsia")
-	TailwindPink    = Hex("#EC4899").WithName("tailwind_pink")
-	TailwindRose    = Hex("#F43F5E").WithName("tailwind_rose")
+	TailwindRed     = NewHex("#EF4444").WithName("tailwind_red")
+	TailwindOrange  = NewHex("#F97316").WithName("tailwind_orange")
+	TailwindAmber   = NewHex("#F59E0B").WithName("tailwind_amber")
+	TailwindYellow  = NewHex("#EAB308").WithName("tailwind_yellow")
+	TailwindLime    = NewHex("#84CC16").WithName("tailwind_lime")
+	TailwindGreen   = NewHex("#22C55E").WithName("tailwind_green")
+	TailwindEmerald = NewHex("#10B981").WithName("tailwind_emerald")
+	TailwindTeal    = NewHex("#14B8A6").WithName("tailwind_teal")
+	TailwindCyan    = NewHex("#06B6D4").WithName("tailwind_cyan")
+	TailwindSky     = NewHex("#0EA5E9").WithName("tailwind_sky")
+	TailwindBlue    = NewHex("#3B82F6").WithName("tailwind_blue")
+	TailwindIndigo  = NewHex("#6366F1").WithName("tailwind_indigo")
+	TailwindViolet  = NewHex("#8B5CF6").WithName("tailwind_violet")
+	TailwindPurple  = NewHex("#A855F7").WithName("tailwind_purple")
+	TailwindFuchsia = NewHex("#D946EF").WithName("tailwind_fuchsia")
+	TailwindPink    = NewHex("#EC4899").WithName("tailwind_pink")
+	TailwindRose    = NewHex("#F43F5E").WithName("tailwind_rose")
 )
 
 // Dracula Theme Colors
 var (
-	DraculaPurple = Hex("#BD93F9").WithName("dracula_purple")
-	DraculaPink   = Hex("#FF79C6").WithName("dracula_pink")
-	DraculaGreen  = Hex("#50FA7B").WithName("dracula_green")
-	DraculaOrange = Hex("#FFB86C").WithName("dracula_orange")
-	DraculaRed    = Hex("#FF5555").WithName("dracula_red")
-	DraculaYellow = Hex("#F1FA8C").WithName("dracula_yellow")
-	DraculaCyan   = Hex("#8BE9FD").WithName("dracula_cyan")
+	DraculaPurple = NewHex("#BD93F9").WithName("dracula_purple")
+	DraculaPink   = NewHex("#FF79C6").WithName("dracula_pink")
+	DraculaGreen  = NewHex("#50FA7B").WithName("dracula_green")
+	DraculaOrange = NewHex("#FFB86C").WithName("dracula_orange")
+	DraculaRed    = NewHex("#FF5555").WithName("dracula_red")
+	DraculaYellow = NewHex("#F1FA8C").WithName("dracula_yellow")
+	DraculaCyan   = NewHex("#8BE9FD").WithName("dracula_cyan")
 )
 
 // Nord Theme Colors
 var (
-	NordBlue      = Hex("#5E81AC").WithName("nord_blue")
-	NordLightBlue = Hex("#81A1C1").WithName("nord_light_blue")
-	NordCyan      = Hex("#88C0D0").WithName("nord_cyan")
-	NordGreen     = Hex("#A3BE8C").WithName("nord_green")
-	NordYellow    = Hex("#EBCB8B").WithName("nord_yellow")
-	NordOrange    = Hex("#D08770").WithName("nord_orange")
-	NordRed       = Hex("#BF616A").WithName("nord_red")
-	NordPurple    = Hex("#B48EAD").WithName("nord_purple")
+	NordBlue      = NewHex("#5E81AC").WithName("nord_blue")
+	NordLightBlue = NewHex("#81A1C1").WithName("nord_light_blue")
+	NordCyan      = NewHex("#88C0D0").WithName("nord_cyan")
+	NordGreen     = NewHex("#A3BE8C").WithName("nord_green")
+	NordYellow    = NewHex("#EBCB8B").WithName("nord_yellow")
+	NordOrange    = NewHex("#D08770").WithName("nord_orange")
+	NordRed       = NewHex("#BF616A").WithName("nord_red")
+	NordPurple    = NewHex("#B48EAD").WithName("nord_purple")
 )
 
 // GitHub Colors
 var (
-	GithubGreenLight  = Hex("#28A745").WithName("github_green_light")
-	GithubGreenDark   = Hex("#22863A").WithName("github_green_dark")
-	GithubRedLight    = Hex("#D73A49").WithName("github_red_light")
-	GithubRedDark     = Hex("#B31D28").WithName("github_red_dark")
-	GithubBlueLight   = Hex("#0366D6").WithName("github_blue_light")
-	GithubBlueDark    = Hex("#005CC5").WithName("github_blue_dark")
-	GithubOrangeLight = Hex("#F66A0A").WithName("github_orange_light")
-	GithubOrangeDark  = Hex("#E36209").WithName("github_orange_dark")
-	GithubPurple      = Hex("#6F42C1").WithName("github_purple")
-	GithubYellow      = Hex("#FFD33D").WithName("github_yellow")
+	GithubGreenLight  = NewHex("#28A745").WithName("github_green_light")
+	GithubGreenDark   = NewHex("#22863A").WithName("github_green_dark")
+	GithubRedLight    = NewHex("#D73A49").WithName("github_red_light")
+	GithubRedDark     = NewHex("#B31D28").WithName("github_red_dark")
+	GithubBlueLight   = NewHex("#0366D6").WithName("github_blue_light")
+	GithubBlueDark    = NewHex("#005CC5").WithName("github_blue_dark")
+	GithubOrangeLight = NewHex("#F66A0A").WithName("github_orange_light")
+	GithubOrangeDark  = NewHex("#E36209").WithName("github_orange_dark")
+	GithubPurple      = NewHex("#6F42C1").WithName("github_purple")
+	GithubYellow      = NewHex("#FFD33D").WithName("github_yellow")
 )
 
 // VS Code Colors
 var (
-	VSCodeBlue   = Hex("#007ACC").WithName("vscode_blue")
-	VSCodeGreen  = Hex("#608B4E").WithName("vscode_green")
-	VSCodeRed    = Hex("#F44747").WithName("vscode_red")
-	VSCodeOrange = Hex("#FF8C00").WithName("vscode_orange")
-	VSCodePurple = Hex("#C586C0").WithName("vscode_purple")
-	VSCodeYellow = Hex("#FFCD3C").WithName("vscode_yellow")
-	VSCodeCyan   = Hex("#4EC9B0").WithName("vscode_cyan")
+	VSCodeBlue   = NewHex("#007ACC").WithName("vscode_blue")
+	VSCodeGreen  = NewHex("#608B4E").WithName("vscode_green")
+	VSCodeRed    = NewHex("#F44747").WithName("vscode_red")
+	VSCodeOrange = NewHex("#FF8C00").WithName("vscode_orange")
+	VSCodePurple = NewHex("#C586C0").WithName("vscode_purple")
+	VSCodeYellow = NewHex("#FFCD3C").WithName("vscode_yellow")
+	VSCodeCyan   = NewHex("#4EC9B0").WithName("vscode_cyan")
 )
 
 // ColorTheme represents a theme with semantic colors for logging

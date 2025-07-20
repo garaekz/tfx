@@ -26,7 +26,7 @@ func NewThemeFromPalette(name string, palette color.Palette) ProgressTheme {
 
 	incomplete, _ := palette.Get("gray")
 	if incomplete == (color.Color{}) {
-		incomplete = color.ANSI(8) // Dark gray
+		incomplete = color.NewANSI(8) // Dark gray
 	}
 
 	label, _ := palette.Get("blue")
@@ -40,7 +40,7 @@ func NewThemeFromPalette(name string, palette color.Palette) ProgressTheme {
 		IncompleteColor: incomplete,
 		LabelColor:      label,
 		PercentColor:    label,
-		BorderColor:     color.ANSI(7), // Light gray
+		BorderColor:     color.NewANSI(7), // Light gray
 		EffectEnabled:   false,
 	}
 }
@@ -51,10 +51,10 @@ var (
 	MaterialTheme = ProgressTheme{
 		Name:            "material",
 		CompleteColor:   color.MaterialGreen,
-		IncompleteColor: color.ANSI(8),
+		IncompleteColor: color.NewANSI(8),
 		LabelColor:      color.MaterialBlue,
 		PercentColor:    color.MaterialCyan,
-		BorderColor:     color.ANSI(7),
+		BorderColor:     color.NewANSI(7),
 		EffectEnabled:   false,
 	}
 
@@ -84,10 +84,10 @@ var (
 	GitHubTheme = ProgressTheme{
 		Name:            "github",
 		CompleteColor:   color.GithubGreenLight,
-		IncompleteColor: color.ANSI(8),
+		IncompleteColor: color.NewANSI(8),
 		LabelColor:      color.GithubBlueLight,
 		PercentColor:    color.GithubBlueLight,
-		BorderColor:     color.ANSI(7),
+		BorderColor:     color.NewANSI(7),
 		EffectEnabled:   false,
 	}
 
@@ -95,7 +95,7 @@ var (
 	TailwindTheme = ProgressTheme{
 		Name:            "tailwind",
 		CompleteColor:   color.TailwindGreen,
-		IncompleteColor: color.ANSI(8),
+		IncompleteColor: color.NewANSI(8),
 		LabelColor:      color.TailwindBlue,
 		PercentColor:    color.TailwindCyan,
 		BorderColor:     color.TailwindIndigo,
@@ -106,10 +106,10 @@ var (
 	VSCodeTheme = ProgressTheme{
 		Name:            "vscode",
 		CompleteColor:   color.VSCodeGreen,
-		IncompleteColor: color.ANSI(8),
+		IncompleteColor: color.NewANSI(8),
 		LabelColor:      color.VSCodeBlue,
 		PercentColor:    color.VSCodeCyan,
-		BorderColor:     color.ANSI(7),
+		BorderColor:     color.NewANSI(7),
 		EffectEnabled:   false,
 	}
 
@@ -117,10 +117,10 @@ var (
 	RainbowTheme = ProgressTheme{
 		Name:            "rainbow",
 		CompleteColor:   color.MaterialGreen, // Base color, effects override
-		IncompleteColor: color.ANSI(8),
+		IncompleteColor: color.NewANSI(8),
 		LabelColor:      color.MaterialPurple,
 		PercentColor:    color.MaterialCyan,
-		BorderColor:     color.ANSI(7),
+		BorderColor:     color.NewANSI(7),
 		EffectEnabled:   true, // Rainbow effects!
 	}
 
@@ -128,7 +128,7 @@ var (
 	NeonTheme = ProgressTheme{
 		Name:            "neon",
 		CompleteColor:   color.RGB(0, 255, 0), // Bright green
-		IncompleteColor: color.ANSI(8),
+		IncompleteColor: color.NewANSI(8),
 		LabelColor:      color.RGB(0, 150, 255), // Bright blue
 		PercentColor:    color.RGB(255, 0, 255), // Bright magenta
 		BorderColor:     color.RGB(255, 255, 0), // Bright yellow
@@ -307,7 +307,7 @@ func CreateCustomTheme(name string, complete, incomplete, label color.Color) Pro
 		IncompleteColor: incomplete,
 		LabelColor:      label,
 		PercentColor:    label,
-		BorderColor:     color.ANSI(7),
+		BorderColor:     color.NewANSI(7),
 		EffectEnabled:   false,
 	}
 }

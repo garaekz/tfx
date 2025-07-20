@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/garaekz/tfx/internal/shared"
+	"github.com/garaekz/tfx/internal/share"
 )
 
 // Color represents a color that can be rendered in different terminal modes
@@ -69,27 +69,33 @@ func DefaultColorConfig() ColorConfig {
 
 // --- MULTIPATH API: Three Entry Points ---
 
-// 1. EXPRESS: Quick default constructors
-func RGB(r, g, b uint8) Color {
+// 1. EXPRESS: Quick default constructors (renamed to avoid conflicts)
+func NewRGB(r, g, b uint8) Color {
 	return NewColor(ColorConfig{R: r, G: g, B: b})
 }
 
-func Hex(hex string) Color {
+func NewHex(hex string) Color {
 	return NewColor(ColorConfig{Hex: hex})
 }
 
-func ANSI(code int) Color {
+func NewANSI(code int) Color {
 	return NewColor(ColorConfig{ANSI: code})
 }
 
-func Color256(code int) Color {
+func NewColor256(code int) Color {
 	return NewColor(ColorConfig{Color256: code})
 }
 
+// Backward compatibility - these will be deprecated
+func RGB(r, g, b uint8) Color     { return NewRGB(r, g, b) }   // Deprecated: use NewRGB
+func Hex(hex string) Color        { return NewHex(hex) }       // Deprecated: use NewHex
+func ANSIFunc(code int) Color     { return NewANSI(code) }     // Deprecated: use NewANSI (renamed to avoid conflict)
+func Color256Func(code int) Color { return NewColor256(code) } // Deprecated: use NewColor256 (renamed to avoid conflict)
+
 // 2. INSTANTIATED: Config struct
-func NewColor(cfg ColorConfig, opts ...shared.Option[ColorConfig]) Color {
+func NewColor(cfg ColorConfig, opts ...share.Option[ColorConfig]) Color {
 	// Apply functional options to config
-	shared.ApplyOptions(&cfg, opts...)
+	share.ApplyOptions(&cfg, opts...)
 
 	// If hex is provided, parse it
 	if cfg.Hex != "" {
@@ -119,15 +125,15 @@ func NewColor(cfg ColorConfig, opts ...shared.Option[ColorConfig]) Color {
 	}
 }
 
-// 3. FLUENT: Functional options
-func NewColorWith(opts ...shared.Option[ColorConfig]) Color {
+// 3. FLUENT: Functional options + DSL chaining support
+func NewColorWith(opts ...share.Option[ColorConfig]) Color {
 	cfg := DefaultColorConfig()
 	return NewColor(cfg, opts...)
 }
 
 // --- FUNCTIONAL OPTIONS ---
 
-func WithRGB(r, g, b uint8) shared.Option[ColorConfig] {
+func WithRGB(r, g, b uint8) share.Option[ColorConfig] {
 	return func(cfg *ColorConfig) {
 		cfg.R = r
 		cfg.G = g
@@ -135,37 +141,37 @@ func WithRGB(r, g, b uint8) shared.Option[ColorConfig] {
 	}
 }
 
-func WithHex(hex string) shared.Option[ColorConfig] {
+func WithHex(hex string) share.Option[ColorConfig] {
 	return func(cfg *ColorConfig) {
 		cfg.Hex = hex
 	}
 }
 
-func WithANSI(code int) shared.Option[ColorConfig] {
+func WithANSI(code int) share.Option[ColorConfig] {
 	return func(cfg *ColorConfig) {
 		cfg.ANSI = code
 	}
 }
 
-func WithColor256(code int) shared.Option[ColorConfig] {
+func WithColor256(code int) share.Option[ColorConfig] {
 	return func(cfg *ColorConfig) {
 		cfg.Color256 = code
 	}
 }
 
-func WithName(name string) shared.Option[ColorConfig] {
+func WithName(name string) share.Option[ColorConfig] {
 	return func(cfg *ColorConfig) {
 		cfg.Name = name
 	}
 }
 
-func WithBackground() shared.Option[ColorConfig] {
+func WithBackground() share.Option[ColorConfig] {
 	return func(cfg *ColorConfig) {
 		cfg.IsBg = true
 	}
 }
 
-func WithMode(mode Mode) shared.Option[ColorConfig] {
+func WithMode(mode Mode) share.Option[ColorConfig] {
 	return func(cfg *ColorConfig) {
 		cfg.Mode = mode
 	}
@@ -285,7 +291,7 @@ func parseHexIntoConfig(cfg *ColorConfig) {
 func rgbToANSI(r, g, b uint8) int {
 	brightness := (int(r) + int(g) + int(b)) / 3
 	maxVal := max(r, g, b)
-	
+
 	if maxVal == 0 {
 		return 0 // Black
 	}
@@ -294,19 +300,47 @@ func rgbToANSI(r, g, b uint8) int {
 
 	switch {
 	case r == maxVal && g > b:
-		if bright { return 11 } else { return 3 } // Yellow
+		if bright {
+			return 11
+		} else {
+			return 3
+		} // Yellow
 	case r == maxVal:
-		if bright { return 9 } else { return 1 } // Red
+		if bright {
+			return 9
+		} else {
+			return 1
+		} // Red
 	case g == maxVal && b > r:
-		if bright { return 14 } else { return 6 } // Cyan
+		if bright {
+			return 14
+		} else {
+			return 6
+		} // Cyan
 	case g == maxVal:
-		if bright { return 10 } else { return 2 } // Green
+		if bright {
+			return 10
+		} else {
+			return 2
+		} // Green
 	case b == maxVal && r > g:
-		if bright { return 13 } else { return 5 } // Magenta
+		if bright {
+			return 13
+		} else {
+			return 5
+		} // Magenta
 	case b == maxVal:
-		if bright { return 12 } else { return 4 } // Blue
+		if bright {
+			return 12
+		} else {
+			return 4
+		} // Blue
 	default:
-		if bright { return 15 } else { return 7 } // White/Gray
+		if bright {
+			return 15
+		} else {
+			return 7
+		} // White/Gray
 	}
 }
 

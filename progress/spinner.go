@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/garaekz/tfx/color"
-	"github.com/garaekz/tfx/internal/shared"
+	"github.com/garaekz/tfx/internal/share"
 	"github.com/garaekz/tfx/terminal"
 )
 
@@ -66,9 +66,20 @@ func StartSpinner(message string) *Spinner {
 }
 
 // 2. INSTANTIATED: Config struct
-func NewSpinner(cfg SpinnerConfig, opts ...shared.Option[SpinnerConfig]) *Spinner {
+func NewSpinner(cfg SpinnerConfig, opts ...share.Option[SpinnerConfig]) *Spinner {
 	// Apply functional options to config
-	shared.ApplyOptions(&cfg, opts...)
+	share.ApplyOptions(&cfg, opts...)
+
+	// Ensure defaults are set
+	if len(cfg.Frames) == 0 {
+		cfg.Frames = []string{"|", "/", "-", "\\"}
+	}
+	if cfg.Interval == 0 {
+		cfg.Interval = 100 * time.Millisecond
+	}
+	if cfg.Writer == nil {
+		cfg.Writer = os.Stdout
+	}
 
 	s := &Spinner{
 		frames:   cfg.Frames,
@@ -86,8 +97,8 @@ func NewSpinner(cfg SpinnerConfig, opts ...shared.Option[SpinnerConfig]) *Spinne
 	return s
 }
 
-// 3. FLUENT: Functional options
-func NewSpinnerWith(opts ...shared.Option[SpinnerConfig]) *Spinner {
+// 3. FLUENT: Functional options + DSL chaining support
+func NewSpinnerWith(opts ...share.Option[SpinnerConfig]) *Spinner {
 	cfg := DefaultSpinnerConfig()
 	return NewSpinner(cfg, opts...)
 }
@@ -95,42 +106,42 @@ func NewSpinnerWith(opts ...shared.Option[SpinnerConfig]) *Spinner {
 // --- FUNCTIONAL OPTIONS ---
 
 // WithMessage sets the spinner message
-func WithMessage(message string) shared.Option[SpinnerConfig] {
+func WithMessage(message string) share.Option[SpinnerConfig] {
 	return func(cfg *SpinnerConfig) {
 		cfg.Message = message
 	}
 }
 
 // WithSpinnerFrames sets custom frames for the spinner animation
-func WithSpinnerFrames(frames []string) shared.Option[SpinnerConfig] {
+func WithSpinnerFrames(frames []string) share.Option[SpinnerConfig] {
 	return func(cfg *SpinnerConfig) {
 		cfg.Frames = frames
 	}
 }
 
 // WithSpinnerInterval sets the frame interval duration
-func WithSpinnerInterval(interval time.Duration) shared.Option[SpinnerConfig] {
+func WithSpinnerInterval(interval time.Duration) share.Option[SpinnerConfig] {
 	return func(cfg *SpinnerConfig) {
 		cfg.Interval = interval
 	}
 }
 
 // WithSpinnerTheme applies a ProgressTheme to colorize the spinner
-func WithSpinnerTheme(theme ProgressTheme) shared.Option[SpinnerConfig] {
+func WithSpinnerTheme(theme ProgressTheme) share.Option[SpinnerConfig] {
 	return func(cfg *SpinnerConfig) {
 		cfg.Theme = theme
 	}
 }
 
 // WithSpinnerEffect applies visual effects
-func WithSpinnerEffect(effect SpinnerEffect) shared.Option[SpinnerConfig] {
+func WithSpinnerEffect(effect SpinnerEffect) share.Option[SpinnerConfig] {
 	return func(cfg *SpinnerConfig) {
 		cfg.Effect = effect
 	}
 }
 
 // WithSpinnerWriter sets a custom writer for spinner output
-func WithSpinnerWriter(writer io.Writer) shared.Option[SpinnerConfig] {
+func WithSpinnerWriter(writer io.Writer) share.Option[SpinnerConfig] {
 	return func(cfg *SpinnerConfig) {
 		cfg.Writer = writer
 	}
@@ -139,39 +150,39 @@ func WithSpinnerWriter(writer io.Writer) shared.Option[SpinnerConfig] {
 // --- CONVENIENCE OPTIONS ---
 
 // WithSpinnerMaterialTheme applies Material Design theme
-func WithSpinnerMaterialTheme() shared.Option[SpinnerConfig] {
+func WithSpinnerMaterialTheme() share.Option[SpinnerConfig] {
 	return WithSpinnerTheme(MaterialTheme)
 }
 
 // WithSpinnerDraculaTheme applies Dracula theme
-func WithSpinnerDraculaTheme() shared.Option[SpinnerConfig] {
+func WithSpinnerDraculaTheme() share.Option[SpinnerConfig] {
 	return WithSpinnerTheme(DraculaTheme)
 }
 
 // WithSpinnerNordTheme applies Nord theme
-func WithSpinnerNordTheme() shared.Option[SpinnerConfig] {
+func WithSpinnerNordTheme() share.Option[SpinnerConfig] {
 	return WithSpinnerTheme(NordTheme)
 }
 
 // WithSpinnerRainbow enables rainbow effect
-func WithSpinnerRainbow() shared.Option[SpinnerConfig] {
+func WithSpinnerRainbow() share.Option[SpinnerConfig] {
 	return WithSpinnerEffect(SpinnerEffectRainbow)
 }
 
 // --- PRESET FRAMES ---
 
 // WithDotsFrames uses dots animation
-func WithDotsFrames() shared.Option[SpinnerConfig] {
+func WithDotsFrames() share.Option[SpinnerConfig] {
 	return WithSpinnerFrames([]string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"})
 }
 
 // WithArrowFrames uses arrow animation
-func WithArrowFrames() shared.Option[SpinnerConfig] {
+func WithArrowFrames() share.Option[SpinnerConfig] {
 	return WithSpinnerFrames([]string{"←", "↖", "↑", "↗", "→", "↘", "↓", "↙"})
 }
 
 // WithBounceFrames uses bouncing animation
-func WithBounceFrames() shared.Option[SpinnerConfig] {
+func WithBounceFrames() share.Option[SpinnerConfig] {
 	return WithSpinnerFrames([]string{"⠁", "⠂", "⠄", "⠂"})
 }
 
@@ -201,9 +212,10 @@ func (s *Spinner) Stop(msg string) {
 	s.stopCh <- struct{}{}
 	s.mu.Unlock()
 
-	// Clear line and print completion message
+	// Clear line completely and print completion message
+	fmt.Fprint(s.writer, "\r\033[K") // Clear entire line
 	completion := RenderCompletion(s.theme, msg, true, s.detector)
-	fmt.Fprint(s.writer, "\r"+completion+"\n")
+	fmt.Fprint(s.writer, completion+"\n")
 }
 
 // Fail stops the spinner and prints a failure message
@@ -217,9 +229,10 @@ func (s *Spinner) Fail(msg string) {
 	s.stopCh <- struct{}{}
 	s.mu.Unlock()
 
-	// Clear line and print failure message
+	// Clear line completely and print failure message
+	fmt.Fprint(s.writer, "\r\033[K") // Clear entire line
 	completion := RenderCompletion(s.theme, msg, false, s.detector)
-	fmt.Fprint(s.writer, "\r"+completion+"\n")
+	fmt.Fprint(s.writer, completion+"\n")
 }
 
 // Success is an alias for Stop for better readability
@@ -253,6 +266,11 @@ func (s *Spinner) spin() {
 		default:
 			s.mu.Lock()
 			if !s.active {
+				s.mu.Unlock()
+				return
+			}
+			// Safety check for empty frames
+			if len(s.frames) == 0 {
 				s.mu.Unlock()
 				return
 			}
