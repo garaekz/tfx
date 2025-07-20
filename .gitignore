@@ -76,3 +76,10 @@ tmp/
 auto-save-list
 tramp
 .\#*
+
+# My brags
+*.cast
+
+# Build executables
+*.exe
+*.out
