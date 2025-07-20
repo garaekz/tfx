@@ -1,4 +1,4 @@
-package shared
+package share
 
 // Option is a functional setter for any struct T.
 // Example: func WithText(txt string) Option[Config]

@@ -1,4 +1,4 @@
-package shared
+package share
 
 // Format represents output format
 type Format int
