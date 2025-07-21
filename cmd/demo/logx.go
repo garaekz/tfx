@@ -112,7 +112,7 @@ func runLogxDemo() {
 	// 🌊 Chapter 6: The Context Rivers
 	fmt.Println("\n🌊 Chapter 6: THE CONTEXT RIVERS")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	ctx := logx.WithFields(map[string]interface{}{
+	ctx := logx.WithFields(map[string]any{
 		"request_id": "req-cosmic-123",
 		"user_id":    "user-stardust-789",
 		"operation":  "soul_update",

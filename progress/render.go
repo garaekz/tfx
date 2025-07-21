@@ -193,13 +193,13 @@ func RenderResponsiveBar(p *Progress, maxWidth int) string {
 	percentLen := 5 // " 100%"
 	borderLen := 4  // " [" + "] "
 
-	availableWidth := maxWidth - labelLen - percentLen - borderLen
-	if availableWidth < 10 {
-		availableWidth = 10 // Minimum width
-	}
-	if availableWidth > 60 {
-		availableWidth = 60 // Maximum width
-	}
+	availableWidth := min(
+		// Minimum width
+		max(maxWidth-labelLen-percentLen-borderLen,
+
+			10),
+		// Maximum width
+		60)
 
 	// Temporarily adjust width for rendering
 	originalWidth := p.width

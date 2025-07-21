@@ -1,6 +1,7 @@
 package color
 
 import (
+	"slices"
 	"testing"
 )
 
@@ -225,13 +226,7 @@ func TestListPalettes(t *testing.T) {
 	// Check that all expected palettes are present
 	expectedPalettes := []string{"status", "material", "dracula", "nord", "tailwind", "github", "vscode"}
 	for _, expected := range expectedPalettes {
-		found := false
-		for _, name := range names {
-			if name == expected {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(names, expected)
 		if !found {
 			t.Errorf("ListPalettes should include '%s'", expected)
 		}

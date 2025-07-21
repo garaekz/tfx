@@ -3,6 +3,7 @@ package logx
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 
 	"github.com/garaekz/tfx/color"
@@ -10,11 +11,9 @@ import (
 )
 
 // WithField adds a single field to the context
-func (c *Context) WithField(key string, value interface{}) *Context {
-	newFields := make(map[string]interface{})
-	for k, v := range c.fields {
-		newFields[k] = v
-	}
+func (c *Context) WithField(key string, value any) *Context {
+	newFields := make(map[string]any)
+	maps.Copy(newFields, c.fields)
 	newFields[key] = value
 
 	return &Context{
@@ -26,13 +25,9 @@ func (c *Context) WithField(key string, value interface{}) *Context {
 
 // WithFields adds multiple fields to the context
 func (c *Context) WithFields(fields share.Fields) *Context {
-	newFields := make(map[string]interface{})
-	for k, v := range c.fields {
-		newFields[k] = v
-	}
-	for k, v := range fields {
-		newFields[k] = v
-	}
+	newFields := make(map[string]any)
+	maps.Copy(newFields, c.fields)
+	maps.Copy(newFields, fields)
 
 	return &Context{
 		logger: c.logger,
@@ -56,7 +51,7 @@ func (c *Context) WithError(err error) *Context {
 }
 
 // WithUser adds user-related fields (common pattern)
-func (c *Context) WithUser(userID interface{}) *Context {
+func (c *Context) WithUser(userID any) *Context {
 	return c.WithField("user_id", userID)
 }
 
@@ -85,16 +80,12 @@ func (c *Context) log(level share.Level, msg string) {
 	allFields := make(share.Fields)
 
 	// Add fields from the logging context
-	for k, v := range c.fields {
-		allFields[k] = v
-	}
+	maps.Copy(allFields, c.fields)
 
 	// Extract fields from context.Context if any exist
 	if c.ctx != nil {
 		if ctxFields := extractContextFields(c.ctx); ctxFields != nil {
-			for k, v := range ctxFields {
-				allFields[k] = v
-			}
+			maps.Copy(allFields, ctxFields)
 		}
 	}
 
@@ -113,49 +104,47 @@ func (c *Context) log(level share.Level, msg string) {
 }
 
 // Logging methods for Context
-func (c *Context) Trace(msg string, args ...interface{}) {
+func (c *Context) Trace(msg string, args ...any) {
 	c.log(share.LevelTrace, fmt.Sprintf(msg, args...))
 }
 
-func (c *Context) Debug(msg string, args ...interface{}) {
+func (c *Context) Debug(msg string, args ...any) {
 	c.log(share.LevelDebug, fmt.Sprintf(msg, args...))
 }
 
-func (c *Context) Info(msg string, args ...interface{}) {
+func (c *Context) Info(msg string, args ...any) {
 	c.log(share.LevelInfo, fmt.Sprintf(msg, args...))
 }
 
-func (c *Context) Warn(msg string, args ...interface{}) {
+func (c *Context) Warn(msg string, args ...any) {
 	c.log(share.LevelWarn, fmt.Sprintf(msg, args...))
 }
 
-func (c *Context) Error(msg string, args ...interface{}) {
+func (c *Context) Error(msg string, args ...any) {
 	c.log(share.LevelError, fmt.Sprintf(msg, args...))
 }
 
-func (c *Context) Fatal(msg string, args ...interface{}) {
+func (c *Context) Fatal(msg string, args ...any) {
 	c.log(share.LevelFatal, fmt.Sprintf(msg, args...))
 	os.Exit(1)
 }
 
-func (c *Context) Panic(msg string, args ...interface{}) {
+func (c *Context) Panic(msg string, args ...any) {
 	msg = fmt.Sprintf(msg, args...)
 	c.log(share.LevelPanic, msg)
 	panic(msg)
 }
 
-func (c *Context) Success(msg string, args ...interface{}) {
+func (c *Context) Success(msg string, args ...any) {
 	c.log(share.LevelSuccess, fmt.Sprintf(msg, args...))
 }
 
 // FatalIf logs a fatal message with context if err is not nil and exits
-func (c *Context) FatalIf(err error, msg string, args ...interface{}) {
+func (c *Context) FatalIf(err error, msg string, args ...any) {
 	if err != nil {
 		formattedMsg := fmt.Sprintf(msg, args...)
 		errorFields := make(share.Fields)
-		for k, v := range c.fields {
-			errorFields[k] = v
-		}
+		maps.Copy(errorFields, c.fields)
 		errorFields["error"] = err.Error()
 
 		c.logger.log(share.LevelFatal, fmt.Sprintf("%s: %v", formattedMsg, err), errorFields)
@@ -164,13 +153,11 @@ func (c *Context) FatalIf(err error, msg string, args ...interface{}) {
 }
 
 // ErrorIf logs an error message with context if err is not nil and returns true if error occurred
-func (c *Context) ErrorIf(err error, msg string, args ...interface{}) bool {
+func (c *Context) ErrorIf(err error, msg string, args ...any) bool {
 	if err != nil {
 		formattedMsg := fmt.Sprintf(msg, args...)
 		errorFields := make(share.Fields)
-		for k, v := range c.fields {
-			errorFields[k] = v
-		}
+		maps.Copy(errorFields, c.fields)
 		errorFields["error"] = err.Error()
 
 		c.logger.log(share.LevelError, fmt.Sprintf("%s: %v", formattedMsg, err), errorFields)
@@ -180,13 +167,11 @@ func (c *Context) ErrorIf(err error, msg string, args ...interface{}) bool {
 }
 
 // WarnIf logs a warning message with context if err is not nil and returns true if error occurred
-func (c *Context) WarnIf(err error, msg string, args ...interface{}) bool {
+func (c *Context) WarnIf(err error, msg string, args ...any) bool {
 	if err != nil {
 		formattedMsg := fmt.Sprintf(msg, args...)
 		errorFields := make(share.Fields)
-		for k, v := range c.fields {
-			errorFields[k] = v
-		}
+		maps.Copy(errorFields, c.fields)
 		errorFields["error"] = err.Error()
 
 		c.logger.log(share.LevelWarn, fmt.Sprintf("%s: %v", formattedMsg, err), errorFields)
@@ -196,13 +181,11 @@ func (c *Context) WarnIf(err error, msg string, args ...interface{}) bool {
 }
 
 // InfoIf logs an info message with context if err is not nil and returns true if error occurred
-func (c *Context) InfoIf(err error, msg string, args ...interface{}) bool {
+func (c *Context) InfoIf(err error, msg string, args ...any) bool {
 	if err != nil {
 		formattedMsg := fmt.Sprintf(msg, args...)
 		errorFields := make(share.Fields)
-		for k, v := range c.fields {
-			errorFields[k] = v
-		}
+		maps.Copy(errorFields, c.fields)
 		errorFields["error"] = err.Error()
 
 		c.logger.log(share.LevelInfo, fmt.Sprintf("%s: %v", formattedMsg, err), errorFields)
@@ -212,13 +195,11 @@ func (c *Context) InfoIf(err error, msg string, args ...interface{}) bool {
 }
 
 // DebugIf logs a debug message with context if err is not nil and returns true if error occurred
-func (c *Context) DebugIf(err error, msg string, args ...interface{}) bool {
+func (c *Context) DebugIf(err error, msg string, args ...any) bool {
 	if err != nil {
 		formattedMsg := fmt.Sprintf(msg, args...)
 		errorFields := make(share.Fields)
-		for k, v := range c.fields {
-			errorFields[k] = v
-		}
+		maps.Copy(errorFields, c.fields)
 		errorFields["error"] = err.Error()
 
 		c.logger.log(share.LevelDebug, fmt.Sprintf("%s: %v", formattedMsg, err), errorFields)
@@ -227,11 +208,9 @@ func (c *Context) DebugIf(err error, msg string, args ...interface{}) bool {
 	return false
 }
 
-func (c *Context) Badge(tag, msg string, color color.Color, args ...interface{}) {
+func (c *Context) Badge(tag, msg string, color color.Color, args ...any) {
 	badgeFields := make(share.Fields)
-	for k, v := range c.fields {
-		badgeFields[k] = v
-	}
+	maps.Copy(badgeFields, c.fields)
 	badgeFields["badge"] = tag
 	badgeFields["badge_color"] = color
 
@@ -252,9 +231,7 @@ func (c *Context) Badge(tag, msg string, color color.Color, args ...interface{})
 // GetFields returns a copy of all fields in the context
 func (c *Context) GetFields() share.Fields {
 	fields := make(share.Fields)
-	for k, v := range c.fields {
-		fields[k] = v
-	}
+	maps.Copy(fields, c.fields)
 	return fields
 }
 

@@ -2,6 +2,7 @@ package logx
 
 import (
 	"fmt"
+	"maps"
 	"os"
 
 	"github.com/garaekz/tfx/color"
@@ -131,16 +132,14 @@ func (f *FluentLogger) AsTrace() *FluentLogger {
 }
 
 // WithField adds a field to the fluent logger
-func (f *FluentLogger) WithField(key string, value interface{}) *FluentLogger {
+func (f *FluentLogger) WithField(key string, value any) *FluentLogger {
 	f.fields[key] = value
 	return f
 }
 
 // WithFields adds multiple fields to the fluent logger
 func (f *FluentLogger) WithFields(fields share.Fields) *FluentLogger {
-	for k, v := range fields {
-		f.fields[k] = v
-	}
+	maps.Copy(f.fields, fields)
 	return f
 }
 

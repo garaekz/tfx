@@ -207,7 +207,7 @@ func (l *Logger) AddHook(hook Hook) {
 func (l *Logger) WithFields(fields share.Fields) *Context {
 	return &Context{
 		logger: l,
-		fields: map[string]interface{}(fields),
+		fields: map[string]any(fields),
 		ctx:    l.ctx,
 	}
 }
@@ -216,7 +216,7 @@ func (l *Logger) WithFields(fields share.Fields) *Context {
 func (l *Logger) WithContext(ctx context.Context) *Context {
 	return &Context{
 		logger: l,
-		fields: make(map[string]interface{}),
+		fields: make(map[string]any),
 		ctx:    ctx,
 	}
 }

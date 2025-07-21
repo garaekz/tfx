@@ -177,33 +177,3 @@ func runShowcaseDemo() {
 	fmt.Println("• Emoji and custom frame animations")
 	fmt.Println("• Seamless progress and spinner integration")
 }
-
-// Usage examples showing advanced patterns
-func advancedUsageExamples() {
-	// 1. Custom theme with hex colors
-	corporateTheme := progress.CreateCustomTheme(
-		"corporate",
-		color.Hex("#007ACC"), // Complete color
-		color.Hex("#E1E4E8"), // Incomplete color
-		color.Hex("#24292E"), // Label color
-	)
-
-	// 2. Complex progress with dynamic theming
-	complexBar := progress.Start(
-		progress.WithTotal(100),
-		progress.WithLabel("Dynamic Process"),
-		progress.WithProgressTheme(corporateTheme),
-		progress.WithGradientEffect(),
-		progress.WithProgressWidth(50),
-	)
-
-	// 3. Multi-stage spinner with theme switching
-	multiSpinner := progress.NewSpinnerWith(
-		progress.WithMessage("Multi-stage process..."),
-		progress.WithSpinnerMaterialTheme(),
-	)
-
-	// These would be used in actual implementation
-	_ = complexBar
-	_ = multiSpinner
-}

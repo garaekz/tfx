@@ -66,7 +66,7 @@ func DefaultOptions() LogOptions {
 // Context represents a logging context with fields
 type Context struct {
 	logger *Logger
-	fields map[string]interface{}
+	fields map[string]any
 	ctx    context.Context
 }
 

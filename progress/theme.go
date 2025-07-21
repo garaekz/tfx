@@ -191,7 +191,7 @@ func (pt ProgressTheme) renderSolidProgress(filled, width int, detector *termina
 	incompleteColor := pt.RenderColor(pt.IncompleteColor, detector)
 
 	bar := ""
-	for i := 0; i < width; i++ {
+	for i := range width {
 		if i < filled {
 			bar += completeColor + "█" + color.Reset
 		} else {
@@ -215,7 +215,7 @@ func (pt ProgressTheme) renderRainbowProgress(filled, width int, detector *termi
 	incompleteColor := pt.RenderColor(pt.IncompleteColor, detector)
 
 	bar := ""
-	for i := 0; i < width; i++ {
+	for i := range width {
 		if i < filled {
 			colorIndex := i % len(rainbowColors)
 			currentColor := pt.RenderColor(rainbowColors[colorIndex], detector)
@@ -234,7 +234,7 @@ func (pt ProgressTheme) renderGradientProgress(filled, width int, detector *term
 	incompleteColor := pt.RenderColor(pt.IncompleteColor, detector)
 
 	bar := ""
-	for i := 0; i < width; i++ {
+	for i := range width {
 		if i < filled {
 			// Calculate interpolation (simplified)
 			ratio := float64(i) / float64(filled)
@@ -263,7 +263,7 @@ func (pt ProgressTheme) renderGlowProgress(filled, width int, detector *terminal
 	incompleteColor := pt.RenderColor(pt.IncompleteColor, detector)
 
 	bar := ""
-	for i := 0; i < width; i++ {
+	for i := range width {
 		if i < filled {
 			// Glow effect: brighter in center, dimmer at edges
 			distanceFromCenter := float64(abs(i-filled/2)) / float64(filled/2)

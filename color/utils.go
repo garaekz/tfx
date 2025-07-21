@@ -139,13 +139,13 @@ func ApplyBg(text string, fg, bg Color, mode Mode) string {
 }
 
 // Sprint applies color and returns formatted string
-func Sprint(color Color, args ...interface{}) string {
+func Sprint(color Color, args ...any) string {
 	text := fmt.Sprint(args...)
 	return Apply(text, color, ModeTrueColor)
 }
 
 // Sprintf applies color with formatting
-func Sprintf(color Color, format string, args ...interface{}) string {
+func Sprintf(color Color, format string, args ...any) string {
 	text := fmt.Sprintf(format, args...)
 	return Apply(text, color, ModeTrueColor)
 }
@@ -203,7 +203,7 @@ func StripANSI(text string) string {
 	inEscape := false
 	runes := []rune(text)
 
-	for i := 0; i < len(runes); i++ {
+	for i := range runes {
 		if runes[i] == '\033' && i+1 < len(runes) && runes[i+1] == '[' {
 			inEscape = true
 			continue
@@ -365,10 +365,7 @@ func ProgressBar(current, total, width int, filledColor, emptyColor Color) strin
 		total = 1
 	}
 
-	filled := (current * width) / total
-	if filled > width {
-		filled = width
-	}
+	filled := min((current*width)/total, width)
 
 	filledStr := strings.Repeat("█", filled)
 	emptyStr := strings.Repeat("░", width-filled)
