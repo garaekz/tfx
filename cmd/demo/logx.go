@@ -5,188 +5,224 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/garaekz/tfx/color"
 	"github.com/garaekz/tfx/logx"
 )
 
 func runLogxDemo() {
-	fmt.Println("📝 TFX Logging Demonstrations")
-	fmt.Println("=============================")
+	// 🎬 Opening Cinematic
+	fmt.Println("\n🌟 ═══════════════════════════════════════════════════════════════")
+	fmt.Println("🎨                   TFX LOGX SHOWCASE                       🎨")
+	fmt.Println("🌟 ═══════════════════════════════════════════════════════════════")
+	fmt.Println("🚀 Building the future of terminal logging, one badge at a time")
+	fmt.Println()
 
-	// 1. Basic Logging Levels
-	fmt.Println("\n1. BASIC LOGGING LEVELS:")
-	logx.Trace("This is a trace message - very detailed debugging")
-	logx.Debug("This is a debug message - development info")
-	logx.Info("This is an info message - general information")
-	logx.Success("This is a success message - operation completed!")
-	logx.Warn("This is a warning message - something to watch")
-	logx.Error("This is an error message - something went wrong")
-	// logx.Fatal("This would be a fatal message - program exits")
+	// 🎭 Chapter 1: The Art of Visual Communication
+	fmt.Println("\n🎭 Chapter 1: THE ART OF VISUAL COMMUNICATION")
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	logx.Trace("🔍 Deep system introspection - following the electron trails")
+	logx.Debug("🛠️  Engineering insights - watching the gears turn")
+	logx.Info("ℹ️  Narrative unfolding - the story your system tells")
+	logx.Success("✨ Victory achieved - dreams becoming reality")
+	logx.Warn("⚠️  Storm approaching - wisdom from the edge")
+	logx.Error("🔥 Phoenix moment - rising from digital ashes")
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(400 * time.Millisecond)
 
-	// 2. If Variants - Conditional Logging
-	fmt.Println("\n2. CONDITIONAL LOGGING (If variants):")
-	
-	// Simulate some operations with potential errors
-	err1 := errors.New("connection timeout")
-	err2 := errors.New("invalid input")
-	var err3 error // nil error
+	// 🏆 Chapter 2: Badge Mastery - Where Form Meets Function
+	fmt.Println("\n🏆 Chapter 2: BADGE MASTERY - WHERE FORM MEETS FUNCTION")
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	logx.SuccessBadge("API", "🌐 Quantum entanglement with external dimensions")
+	logx.ErrorBadge("DB", "🗄️  Digital ocean levels critical - send backup whales")
+	logx.WarnBadge("CACHE", "⚡ Memory palace reorganizing - philosophers confused")
+	logx.InfoBadge("SYS", "🔄 Cosmic alignment achieved - servers humming in harmony")
+	logx.DebugBadge("AUTH", "🔐 Digital handshakes verified - trust protocols engaged")
 
-	// These return true if they logged, false if no error
-	if logx.ErrorIf(err1, "Failed to connect to database") {
-		fmt.Println("   → Database error was logged")
-	}
-
-	if logx.WarnIf(err2, "Input validation issue") {
-		fmt.Println("   → Warning was logged")
-	}
-
-	if !logx.InfoIf(err3, "This won't be logged because err3 is nil") {
-		fmt.Println("   → No error, so nothing was logged")
-	}
-
-	time.Sleep(500 * time.Millisecond)
-
-	// 3. Modern Badge System
-	fmt.Println("\n3. MODERN BADGE SYSTEM:")
-	logx.SuccessBadge("API", "Successfully connected to external service")
-	logx.ErrorBadge("DB", "Connection pool exhausted")
-	logx.WarnBadge("CACHE", "Cache hit ratio below threshold")
-	logx.InfoBadge("SYS", "System startup completed")
-	logx.DebugBadge("AUTH", "JWT token validation process")
-
-	time.Sleep(500 * time.Millisecond)
-
-	// 4. Themed Badges - Domain Specific
-	fmt.Println("\n4. THEMED DOMAIN BADGES:")
-	logx.DatabaseBadge("Connected to PostgreSQL", true)
-	logx.DatabaseBadge("Failed to migrate schema", false)
-	logx.APIBadge("External API call succeeded", true)
-	logx.APIBadge("Rate limit exceeded", false)
-	logx.AuthBadge("User authenticated successfully", true)
-	logx.AuthBadge("Invalid credentials provided", false)
-	logx.CacheBadge("Redis cache warmed up", true)
-	logx.CacheBadge("Cache miss for user data", false)
-	logx.SystemBadge("Application ready to serve requests")
-	logx.ConfigBadge("Configuration loaded from environment")
-
-	time.Sleep(500 * time.Millisecond)
-
-	// 5. Fluent/DSL Interface
-	fmt.Println("\n5. FLUENT/DSL INTERFACE:")
-	
-	testErr := errors.New("network unreachable")
-	
-	// Fluent conditional logging
-	logx.If(testErr).AsError().Msg("Network operation failed")
-	logx.If(testErr).AsWarn().WithField("retry_count", 3).Msg("Will retry operation")
-	
-	// More complex fluent usage
-	logx.If(testErr).
-		AsError().
-		WithField("component", "network").
-		WithField("operation", "fetch_data").
-		WithField("timeout", "30s").
-		Msg("Data fetch operation failed")
-
-	time.Sleep(500 * time.Millisecond)
-
-	// 6. Context-based Logging
-	fmt.Println("\n6. CONTEXT-BASED LOGGING:")
-	
-	// Create a context with fields
-	ctx := logx.WithFields(map[string]interface{}{
-		"request_id": "req-12345",
-		"user_id":    "user-67890",
-		"session":    "sess-abcdef",
+	// ✨ Chapter 2.5: Visual Badge Magic
+	fmt.Println("\n✨ Visual Badge Magic:")
+	logx.BadgeWithOptions("DEPLOY", "🚀 Rocket ship departing for production", logx.BadgeOptions{
+		Gradient: []color.Color{color.NewHex("D38312"), color.NewHex("A83279")},
+	})
+	logx.BadgeWithOptions("NEON", "💎 Cyberpunk dreams materializing", logx.BadgeOptions{
+		Neon: true,
+	})
+	logx.BadgeWithOptions("THEME", "🎨 Canvas painted with midnight blues", logx.BadgeOptions{
+		Theme: "blue",
+		Bold:  true,
+	})
+	logx.BadgeWithOptions("PULSE", "💓 Digital heartbeat detected", logx.BadgeOptions{
+		Blink:      true,
+		Foreground: color.NewHex("FF6B6B"),
+	})
+	logx.BadgeWithOptions("EPIC", "🌈 Where typography becomes art", logx.BadgeOptions{
+		Bold:       true,
+		Italic:     true,
+		Underline:  true,
+		Foreground: color.NewHex("4ECDC4"),
 	})
 
-	ctx.Info("User logged into the system")
-	ctx.Success("Profile update completed successfully")
-	
-	// Add more context
-	ctxWithMore := ctx.WithField("operation", "file_upload")
-	ctxWithMore.Info("Starting file upload process")
-	
-	// Conditional logging with context
-	uploadErr := errors.New("file too large")
-	if ctxWithMore.ErrorIf(uploadErr, "File upload failed") {
-		ctxWithMore.Warn("Will notify user about file size limit")
-	}
-
 	time.Sleep(500 * time.Millisecond)
 
-	// 7. Multipath API Examples
-	fmt.Println("\n7. MULTIPATH API EXAMPLES:")
-	
-	// EXPRESS: Quick defaults
-	expressLogger := logx.Log()
-	expressLogger.Info("This is from the express logger")
+	// 🌈 Chapter 3: The Startup Symphony
+	fmt.Println("\n🌈 Chapter 3: THE STARTUP SYMPHONY")
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	logx.APIBadge("🌐 GraphQL mutations dancing through fiber optics", true)
+	logx.DatabaseBadge("🗄️  MongoDB clusters singing in perfect harmony", true)
+	logx.AuthBadge("🔐 OAuth2 tokens born from digital stardust", true)
+	logx.CacheBadge("⚡ Redis pipelines conducting lightning symphonies", true)
+	logx.SystemBadge("🔄 Kubernetes orchestrating the cloud ballet")
+	logx.InfoBadge("STARTUP", "💡 Where unicorns meet terminal rainbows")
+	logx.WarnBadge("GROWTH", "📈 Scaling faster than coffee consumption")
+	logx.ErrorBadge("HUSTLE", "💪 Failing fast, learning faster")
 
-	// CONFIG: Explicit configuration
+	time.Sleep(400 * time.Millisecond)
+
+	// 🔮 Chapter 4: The Wisdom of Conditional Logic
+	fmt.Println("\n🔮 Chapter 4: THE WISDOM OF CONDITIONAL LOGIC")
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	networkErr := errors.New("cosmic interference detected")
+	dataErr := errors.New("reality validation failure")
+	var noErr error
+
+	if logx.ErrorIf(networkErr, "🌌 Network spirits are restless tonight") {
+		fmt.Println("   ✨ Error captured in digital amber")
+	}
+
+	if logx.WarnIf(dataErr, "⚠️  The data oracle speaks of inconsistencies") {
+		fmt.Println("   ✨ Warning whispered to the terminal winds")
+	}
+
+	if !logx.InfoIf(noErr, "This won't be logged") {
+		fmt.Println("   ✨ Silence is golden - no error, no noise")
+	}
+
+	time.Sleep(400 * time.Millisecond)
+
+	// 🏛️ Chapter 5: Enterprise Theater
+	fmt.Println("\n🏛️ Chapter 5: ENTERPRISE THEATER")
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	logx.DatabaseBadge("🛒 Order #12345 crystallized in digital vaults", true)
+	logx.APIBadge("💳 Payment electrons successfully transferred", true)
+	logx.CacheBadge("📦 Product catalog materialized in memory palace", true)
+	logx.DatabaseBadge("🌪️  User preferences scattered by digital winds", false)
+	logx.APIBadge("🚫 External service vanished into the void", false)
+
+	time.Sleep(400 * time.Millisecond)
+
+	// 🌊 Chapter 6: The Context Rivers
+	fmt.Println("\n🌊 Chapter 6: THE CONTEXT RIVERS")
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	ctx := logx.WithFields(map[string]interface{}{
+		"request_id": "req-cosmic-123",
+		"user_id":    "user-stardust-789",
+		"operation":  "soul_update",
+		"region":     "multiverse-west-∞",
+		"dimension":  "digital",
+	})
+
+	ctx.Info("🚀 API request born from quantum thoughts")
+	ctx.Success("✨ User essence successfully transformed")
+
+	ctxWithFile := ctx.WithField("file_size", "2.3MB of pure magic")
+	ctxWithFile.Info("📁 Digital artifact upload commenced")
+
+	uploadErr := errors.New("artifact too powerful for this realm")
+	if ctxWithFile.ErrorIf(uploadErr, "📤 Artifact rejected by reality") {
+		ctxWithFile.Warn("🔄 Compressing magic for mortal consumption")
+	}
+
+	time.Sleep(400 * time.Millisecond)
+
+	// ⚡ Chapter 7: The Three Paths of Creation
+	fmt.Println("\n⚡ Chapter 7: THE THREE PATHS OF CREATION")
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	expressLogger := logx.Log()
+	expressLogger.Info("🏃 Express path - swift as lightning")
+
 	configLogger := logx.NewWithConfig(logx.LogOptions{
 		Level:     logx.LevelDebug,
 		Timestamp: true,
 	})
-	configLogger.Debug("This is from the config logger with timestamp")
+	configLogger.Debug("🏗️  Config path - engineered with precision")
 
-	// FLUENT: Functional options
 	fluentLogger := logx.NewWith(
 		logx.WithLevel(logx.LevelInfo),
 		logx.WithTimestamp(false),
 		logx.WithDevelopment(),
 	)
-	fluentLogger.Success("This is from the fluent logger")
+	fluentLogger.Success("🌊 Fluent path - flowing like liquid poetry")
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(400 * time.Millisecond)
 
-	// 8. Preset Loggers
-	fmt.Println("\n8. PRESET LOGGER EXAMPLES:")
-	
+	// 🎪 Chapter 8: The Logger Personalities
+	fmt.Println("\n🎪 Chapter 8: THE LOGGER PERSONALITIES")
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	devLogger := logx.DevLogger()
-	devLogger.Debug("Development logger - shows debug info")
+	devLogger.Debug("🛠️  Development oracle - seeing through code veils")
 
 	consoleLogger := logx.ConsoleLogger()
-	consoleLogger.Info("Console logger - colorful output")
+	consoleLogger.Info("🖥️  Console poet - painting words on terminal canvas")
 
 	structuredLogger := logx.StructuredLogger()
-	structuredLogger.Info("Structured logger - JSON format")
+	structuredLogger.Info("📋 Structured sage - speaking in machine tongues")
+
+	time.Sleep(400 * time.Millisecond)
+
+	// 🌀 Chapter 9: The Fluent Spells
+	fmt.Println("\n🌀 Chapter 9: THE FLUENT SPELLS")
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	testErr := errors.New("cosmic service disruption")
+
+	logx.If(testErr).AsError().Msg("🌌 Service portal sealed by interdimensional forces")
+	logx.If(testErr).AsWarn().WithField("retry_count", 3).Msg("🔄 Attempting quantum tunnel reconnection")
+
+	logx.If(testErr).
+		AsError().
+		WithField("service", "soul-auth").
+		WithField("timeout", "30s of eternity").
+		WithField("attempt", "first of many").
+		Msg("🔐 Authentication temple temporarily closed")
+
+	time.Sleep(400 * time.Millisecond)
+
+	// 💫 Chapter 10: The Performance Symphony
+	fmt.Println("\n💫 Chapter 10: THE PERFORMANCE SYMPHONY")
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	logx.SystemBadge("💾 Memory rivers flowing at 234MB - crystal clear")
+	logx.SystemBadge("🖥️  CPU dancing at 12% - energy in perfect harmony")
+	logx.SystemBadge("🌐 Network whispers at 45ms - messages swift as wind")
+	logx.SystemBadge("⚡ Response lightning at 120ms - speed of thought")
+
+	// 🎆 The Grand Finale
+	fmt.Println("\n🎆 ═══════════════════════════════════════════════════════════════")
+	fmt.Println("🎊                    GRAND FINALE                             🎊")
+	fmt.Println("🎆 ═══════════════════════════════════════════════════════════════")
+
+	// Final showcase of mastery
+	logx.InfoBadge("FINALE", "🎭 All systems awakening from digital dreams")
+	logx.WarnBadge("MEMORY", "💭 Cache poets writing verses in silicon")
+	logx.ErrorBadge("PHOENIX", "🔥 Errors transforming into wisdom")
 
 	time.Sleep(500 * time.Millisecond)
 
-	// 9. Custom Modern Badges
-	fmt.Println("\n9. CUSTOM MODERN BADGES:")
-	
-	logx.ModernBadge("CUSTOM", "This is a custom badge",
-		logx.WithBadgeColor(logx.White),
-		logx.WithBadgeBackground(logx.Purple),
-		logx.WithBold(),
-	)
-
-	logx.ModernBadge("HTTP", "Request processed successfully",
-		logx.WithBadgeColor(logx.Black),
-		logx.WithBadgeBackground(logx.Green),
-		logx.WithBadgeLevel(logx.LevelSuccess),
-	)
-
-	logx.ModernBadge("WARN", "Memory usage is high",
-		logx.WithBadgeColor(logx.Black),
-		logx.WithBadgeBackground(logx.Yellow),
-		logx.WithBadgeLevel(logx.LevelWarn),
-		logx.WithBold(),
-	)
-
-	fmt.Println("\n✅ Logging demonstration completed!")
-}
-
-// Example of how to use FatalIf (commented out since it would exit)
-func exampleFatalIf() {
-	criticalErr := errors.New("database connection lost")
-	
-	// This would log the error and exit the program with status 1
-	// logx.FatalIf(criticalErr, "Cannot continue without database")
-	
-	// For demo purposes, just show what it would do:
-	fmt.Println("   → FatalIf would log this error and call os.Exit(1)")
-	fmt.Printf("   → Error: %v\n", criticalErr)
+	// 🌟 The Epic Conclusion
+	fmt.Println("\n🌟 ═══════════════════════════════════════════════════════════════")
+	fmt.Println("✨                  THE LOGX MANIFESTO                         ✨")
+	fmt.Println("🌟 ═══════════════════════════════════════════════════════════════")
+	fmt.Println("")
+	fmt.Println("🎨 ARTISTRY ACHIEVED:")
+	fmt.Println("   • 🌈 Visual poetry written in terminal light")
+	fmt.Println("   • 🏆 Badge mastery - where function wears beauty")
+	fmt.Println("   • 🎯 Context flows like rivers through digital landscapes")
+	fmt.Println("   • 🌊 Fluent APIs that speak in developer dreams")
+	fmt.Println("   • ⚡ Three paths of creation - choose your journey")
+	fmt.Println("   • 📊 Performance metrics that sing of optimization")
+	fmt.Println("   • 🎭 Personalities for every logging soul")
+	fmt.Println("")
+	fmt.Println("🚀 WELCOME TO THE FUTURE OF TERMINAL EXPRESSION")
+	fmt.Println("💫 Where every log entry is a work of art")
+	fmt.Println("🌟 Where developers become digital poets")
+	fmt.Println("✨ Where terminals transform into galleries")
+	fmt.Println("")
+	fmt.Println("🎉 TFX LogX - Painting dreams in terminal light since 2025")
 }

@@ -1,6 +1,10 @@
 package color
 
-import "github.com/garaekz/tfx/internal/share"
+import (
+	"maps"
+
+	"github.com/garaekz/tfx/internal/share"
+)
 
 // Palette represents a collection of named colors
 type Palette map[string]Color
@@ -51,9 +55,7 @@ func WithColors(colors map[string]Color) share.Option[PaletteConfig] {
 		if cfg.Colors == nil {
 			cfg.Colors = make(map[string]Color)
 		}
-		for name, color := range colors {
-			cfg.Colors[name] = color
-		}
+		maps.Copy(cfg.Colors, colors)
 	}
 }
 
@@ -91,12 +93,8 @@ func (p Palette) Names() []string {
 // Merge combines this palette with another
 func (p Palette) Merge(other Palette) Palette {
 	merged := make(Palette, len(p)+len(other))
-	for name, color := range p {
-		merged[name] = color
-	}
-	for name, color := range other {
-		merged[name] = color
-	}
+	maps.Copy(merged, p)
+	maps.Copy(merged, other)
 	return merged
 }
 
@@ -234,17 +232,31 @@ type ColorTheme struct {
 	Accent    Color
 }
 
+// Modern balanced colors using TrueColor
+var (
+	ModernGreen  = NewHex("#10B981").WithName("modern_green")   // Balanced emerald
+	ModernBlue   = NewHex("#3B82F6").WithName("modern_blue")    // Clean blue
+	ModernRed    = NewHex("#EF4444").WithName("modern_red")     // Warm red
+	ModernYellow = NewHex("#F59E0B").WithName("modern_yellow")  // Rich amber
+	ModernPurple = NewHex("#8B5CF6").WithName("modern_purple")  // Soft violet
+	ModernCyan   = NewHex("#06B6D4").WithName("modern_cyan")    // Fresh cyan
+	ModernOrange = NewHex("#F97316").WithName("modern_orange")  // Vibrant orange
+	ModernPink   = NewHex("#EC4899").WithName("modern_pink")    // Balanced pink
+	ModernGray   = NewHex("#6B7280").WithName("modern_gray")    // Neutral gray
+	ModernSlate  = NewHex("#475569").WithName("modern_slate")   // Dark slate
+)
+
 // DefaultTheme is the default color theme
 var DefaultTheme = ColorTheme{
 	Name:      "default",
-	Success:   ColorSuccess,
-	Error:     ColorError,
-	Warning:   ColorWarning,
-	Info:      ColorInfo,
-	Debug:     ColorDebug,
-	Primary:   ColorBlue,
-	Secondary: ColorCyan,
-	Accent:    MaterialPink,
+	Success:   ModernGreen,
+	Error:     ModernRed,
+	Warning:   ModernYellow,
+	Info:      ModernBlue,
+	Debug:     ModernPurple,
+	Primary:   ModernBlue,
+	Secondary: ModernCyan,
+	Accent:    ModernPink,
 }
 
 // DraculaTheme is the Dracula color theme

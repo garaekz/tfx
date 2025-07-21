@@ -6,11 +6,13 @@ import (
 	"io"
 	"os"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/garaekz/tfx/color"
 	"github.com/garaekz/tfx/internal/share"
+	"github.com/garaekz/tfx/terminal"
 	writerpkg "github.com/garaekz/tfx/writer"
 )
 
@@ -421,15 +423,166 @@ func Fatal(msg string, args ...any)   { GetLogger().Fatal(msg, args...) }
 func Panic(msg string, args ...any)   { GetLogger().Panic(msg, args...) }
 func Success(msg string, args ...any) { GetLogger().Success(msg, args...) }
 
+// BadgeOptions allows advanced visual effects for badges
+type BadgeOptions struct {
+	Foreground color.Color
+	Background color.Color
+	Gradient   []color.Color
+	Blink      bool
+	Neon       bool
+	Theme      string
+	Bold       bool
+	Italic     bool
+	Underline  bool
+}
+
+// BadgeWithOptions renders a badge with advanced visual effects
+func BadgeWithOptions(tag, msg string, opts BadgeOptions, args ...any) {
+	// Detect terminal capabilities for adaptive color mode
+	colorMode := color.ModeTrueColor // Default fallback
+	if detector := terminal.NewDetector(os.Stdout); detector != nil {
+		switch detector.GetMode() {
+		case 0:
+			colorMode = color.ModeNoColor
+		case 1:
+			colorMode = color.ModeANSI
+		case 2:
+			colorMode = color.Mode256Color
+		default:
+			colorMode = color.ModeTrueColor
+		}
+	}
+	
+	// Apply creative effect styling
+	fg, bg, bold, italic, underline, blink := applyCreativeEffects(opts, colorMode)
+	
+	// Create badge without brackets for special effects
+	badgeText := fmt.Sprintf(" %s ", tag) // Padding for better badge appearance
+	
+	// Compose styled badge
+	var finalBadge string
+	var messageStyle color.StyleConfig
+	
+	if len(opts.Gradient) > 1 {
+		// Gradient effect - apply to each character
+		runes := []rune(badgeText)
+		gradLen := len(opts.Gradient)
+		parts := make([]string, len(runes))
+		for i, r := range runes {
+			fgColor := opts.Gradient[(i*gradLen)/len(runes)]
+			bgColor := opts.Gradient[gradLen-1-((i*gradLen)/len(runes))]
+			parts[i] = color.NewStyle(color.StyleConfig{
+				Text:       string(r),
+				ForeGround: fgColor,
+				Background: bgColor,
+				Bold:       bold,
+				Italic:     italic,
+				Underline:  underline,
+				Blink:      blink,
+				Mode:       colorMode,
+			})
+		}
+		finalBadge = strings.Join(parts, "")
+		// For gradient, use last gradient colors for message
+		messageStyle = color.StyleConfig{
+			ForeGround: opts.Gradient[gradLen-1],
+			Bold:       bold,
+			Italic:     italic,
+			Mode:       colorMode,
+		}
+	} else {
+		// Standard styling
+		badgeStyle := color.StyleConfig{
+			Text:       badgeText,
+			ForeGround: fg,
+			Background: bg,
+			Bold:       bold,
+			Italic:     italic,
+			Underline:  underline,
+			Blink:      blink,
+			Mode:       colorMode,
+		}
+		finalBadge = color.NewStyle(badgeStyle)
+		
+		// Message style matches badge foreground
+		messageStyle = color.StyleConfig{
+			ForeGround: fg,
+			Bold:       bold,
+			Italic:     italic,
+			Mode:       colorMode,
+		}
+	}
+	
+	// Style the message text to match badge
+	formattedMsg := fmt.Sprintf(msg, args...)
+	styledMessage := color.NewStyle(color.StyleConfig{
+		Text:       formattedMsg,
+		ForeGround: messageStyle.ForeGround,
+		Bold:       messageStyle.Bold,
+		Italic:     messageStyle.Italic,
+		Blink:      blink, // Apply blink to message for pulse effect
+		Mode:       messageStyle.Mode,
+	})
+	
+	// Emit log with styled badge and message
+	GetLogger().log(share.LevelInfo, styledMessage, share.Fields{
+		"badge_styled": finalBadge,
+	})
+}
+
+// applyCreativeEffects applies creative color schemes for special effects
+func applyCreativeEffects(opts BadgeOptions, mode color.Mode) (fg, bg color.Color, bold, italic, underline, blink bool) {
+	// Start with base options
+	fg = opts.Foreground
+	bg = opts.Background
+	bold = opts.Bold
+	italic = opts.Italic
+	underline = opts.Underline
+	blink = opts.Blink
+	
+	// Apply theme if specified
+	if opts.Theme != "" {
+		if themeColor, ok := color.MaterialPalette()[opts.Theme]; ok {
+			bg = themeColor
+		}
+	}
+	
+	// Creative effects override other settings
+	if opts.Neon {
+		// Neon: Bright cyan on dark with glow effect
+		fg = color.NewHex("00FFFF") // Bright cyan
+		bg = color.NewHex("001122") // Dark blue-black
+		bold = true
+		// Add subtle "glow" with underline
+		underline = true
+	} else if opts.Blink {
+		// Pulse: Warm pulsing colors
+		fg = color.NewHex("FF6B6B") // Warm red
+		bg = color.NewHex("2C1810") // Dark warm brown
+		bold = true
+		blink = true
+	} else if opts.Bold && opts.Italic && opts.Underline {
+		// Epic: Rainbow-like vibrant styling
+		fg = color.NewHex("FFD700") // Gold
+		bg = color.NewHex("4B0082") // Indigo
+		bold = true
+		italic = true
+		underline = true
+	}
+	
+	return
+}
+
+// Legacy Badge for backward compatibility
 func Badge(tag, msg string, color color.Color, args ...any) {
 	GetLogger().Badge(tag, msg, color, args...)
 }
 
 // Global If variants
-func FatalIf(err error, msg string, args ...any) { GetLogger().FatalIf(err, msg, args...) }
+func FatalIf(err error, msg string, args ...any)      { GetLogger().FatalIf(err, msg, args...) }
 func ErrorIf(err error, msg string, args ...any) bool { return GetLogger().ErrorIf(err, msg, args...) }
-func WarnIf(err error, msg string, args ...any) bool { return GetLogger().WarnIf(err, msg, args...) }
-func InfoIf(err error, msg string, args ...any) bool { return GetLogger().InfoIf(err, msg, args...) }
+func WarnIf(err error, msg string, args ...any) bool  { return GetLogger().WarnIf(err, msg, args...) }
+func InfoIf(err error, msg string, args ...any) bool  { return GetLogger().InfoIf(err, msg, args...) }
 func DebugIf(err error, msg string, args ...any) bool { return GetLogger().DebugIf(err, msg, args...) }
 
 func Flush() { GetLogger().Flush() }
