@@ -452,17 +452,17 @@ func BadgeWithOptions(tag, msg string, opts BadgeOptions, args ...any) {
 			colorMode = color.ModeTrueColor
 		}
 	}
-	
+
 	// Apply creative effect styling
 	fg, bg, bold, italic, underline, blink := applyCreativeEffects(opts, colorMode)
-	
+
 	// Create badge without brackets for special effects
 	badgeText := fmt.Sprintf(" %s ", tag) // Padding for better badge appearance
-	
+
 	// Compose styled badge
 	var finalBadge string
 	var messageStyle color.StyleConfig
-	
+
 	if len(opts.Gradient) > 1 {
 		// Gradient effect - apply to each character
 		runes := []rune(badgeText)
@@ -503,7 +503,7 @@ func BadgeWithOptions(tag, msg string, opts BadgeOptions, args ...any) {
 			Mode:       colorMode,
 		}
 		finalBadge = color.NewStyle(badgeStyle)
-		
+
 		// Message style matches badge foreground
 		messageStyle = color.StyleConfig{
 			ForeGround: fg,
@@ -512,7 +512,7 @@ func BadgeWithOptions(tag, msg string, opts BadgeOptions, args ...any) {
 			Mode:       colorMode,
 		}
 	}
-	
+
 	// Style the message text to match badge
 	formattedMsg := fmt.Sprintf(msg, args...)
 	styledMessage := color.NewStyle(color.StyleConfig{
@@ -523,7 +523,7 @@ func BadgeWithOptions(tag, msg string, opts BadgeOptions, args ...any) {
 		Blink:      blink, // Apply blink to message for pulse effect
 		Mode:       messageStyle.Mode,
 	})
-	
+
 	// Emit log with styled badge and message
 	GetLogger().log(share.LevelInfo, styledMessage, share.Fields{
 		"badge_styled": finalBadge,
@@ -539,14 +539,14 @@ func applyCreativeEffects(opts BadgeOptions, mode color.Mode) (fg, bg color.Colo
 	italic = opts.Italic
 	underline = opts.Underline
 	blink = opts.Blink
-	
+
 	// Apply theme if specified
 	if opts.Theme != "" {
 		if themeColor, ok := color.MaterialPalette()[opts.Theme]; ok {
 			bg = themeColor
 		}
 	}
-	
+
 	// Creative effects override other settings
 	if opts.Neon {
 		// Neon: Bright cyan on dark with glow effect
@@ -569,7 +569,7 @@ func applyCreativeEffects(opts BadgeOptions, mode color.Mode) (fg, bg color.Colo
 		italic = true
 		underline = true
 	}
-	
+
 	return
 }
 

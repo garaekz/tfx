@@ -70,11 +70,11 @@ func runMultipathDemo() {
 	fmt.Println("\n═══ 4. OBJECT LIFECYCLE API ═══")
 	fmt.Println("bar := progress.New() // Create without starting")
 	fmt.Println("bar.Start() // Manual control")
-	
+
 	bar := progress.New()
 	fmt.Println("Created bar (not started yet)...")
 	time.Sleep(500 * time.Millisecond)
-	
+
 	fmt.Println("Starting bar manually...")
 	bar.Start()
 	for i := 0; i <= 100; i += 5 {
@@ -94,7 +94,7 @@ func runMultipathDemo() {
 		Theme: progress.MaterialTheme,
 		Width: 35,
 	})
-	
+
 	fmt.Println("Starting configured object...")
 	configuredBar.Start()
 	for i := 0; i <= 60; i += 4 {
@@ -109,9 +109,9 @@ func runMultipathDemo() {
 	fmt.Println("\n═══ 6. UNIFIED IMPLEMENTATION ═══")
 	fmt.Println("All paths use the same internal 'newProgress()' function")
 	fmt.Println("with 'share.OverloadWithOptions' for type safety")
-	
+
 	fmt.Println("\nDemonstrating equivalent calls:")
-	
+
 	// Three equivalent ways to create the same progress bar
 	fmt.Println("1. Start(cfg)")
 	quick1 := progress.Start(progress.ProgressConfig{Total: 20, Label: "Method 1"})

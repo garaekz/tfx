@@ -234,16 +234,16 @@ type ColorTheme struct {
 
 // Modern balanced colors using TrueColor
 var (
-	ModernGreen  = NewHex("#10B981").WithName("modern_green")   // Balanced emerald
-	ModernBlue   = NewHex("#3B82F6").WithName("modern_blue")    // Clean blue
-	ModernRed    = NewHex("#EF4444").WithName("modern_red")     // Warm red
-	ModernYellow = NewHex("#F59E0B").WithName("modern_yellow")  // Rich amber
-	ModernPurple = NewHex("#8B5CF6").WithName("modern_purple")  // Soft violet
-	ModernCyan   = NewHex("#06B6D4").WithName("modern_cyan")    // Fresh cyan
-	ModernOrange = NewHex("#F97316").WithName("modern_orange")  // Vibrant orange
-	ModernPink   = NewHex("#EC4899").WithName("modern_pink")    // Balanced pink
-	ModernGray   = NewHex("#6B7280").WithName("modern_gray")    // Neutral gray
-	ModernSlate  = NewHex("#475569").WithName("modern_slate")   // Dark slate
+	ModernGreen  = NewHex("#10B981").WithName("modern_green")  // Balanced emerald
+	ModernBlue   = NewHex("#3B82F6").WithName("modern_blue")   // Clean blue
+	ModernRed    = NewHex("#EF4444").WithName("modern_red")    // Warm red
+	ModernYellow = NewHex("#F59E0B").WithName("modern_yellow") // Rich amber
+	ModernPurple = NewHex("#8B5CF6").WithName("modern_purple") // Soft violet
+	ModernCyan   = NewHex("#06B6D4").WithName("modern_cyan")   // Fresh cyan
+	ModernOrange = NewHex("#F97316").WithName("modern_orange") // Vibrant orange
+	ModernPink   = NewHex("#EC4899").WithName("modern_pink")   // Balanced pink
+	ModernGray   = NewHex("#6B7280").WithName("modern_gray")   // Neutral gray
+	ModernSlate  = NewHex("#475569").WithName("modern_slate")  // Dark slate
 )
 
 // DefaultTheme is the default color theme

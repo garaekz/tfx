@@ -14,7 +14,7 @@ type EncodingSystem struct {
 	Magenta Color
 	Cyan    Color
 	White   Color
-	
+
 	// Bright colors
 	BrightBlack   Color
 	BrightRed     Color
@@ -37,7 +37,7 @@ type ThemeSystem struct {
 	Magenta Color
 	Cyan    Color
 	White   Color
-	
+
 	// Extended theme colors
 	Purple Color
 	Orange Color
@@ -53,7 +53,7 @@ var (
 	ANSI      *EncodingSystem
 	TrueColor *EncodingSystem
 	Color256  *EncodingSystem
-	
+
 	// Theme-specific access: color.Material.Blue
 	Material *ThemeSystem
 	Dracula  *ThemeSystem
@@ -72,7 +72,7 @@ var (
 	Magenta Color
 	Cyan    Color
 	White   Color
-	
+
 	// Extended colors
 	Purple Color
 	Orange Color
@@ -111,7 +111,7 @@ func createCleanEncodingSystems() {
 		Magenta: NewColor(ColorConfig{ANSI: 5, Name: "ansi_magenta"}),
 		Cyan:    NewColor(ColorConfig{ANSI: 6, Name: "ansi_cyan"}),
 		White:   NewColor(ColorConfig{ANSI: 7, Name: "ansi_white"}),
-		
+
 		BrightBlack:   NewColor(ColorConfig{ANSI: 8, Name: "ansi_bright_black"}),
 		BrightRed:     NewColor(ColorConfig{ANSI: 9, Name: "ansi_bright_red"}),
 		BrightGreen:   NewColor(ColorConfig{ANSI: 10, Name: "ansi_bright_green"}),
@@ -121,7 +121,7 @@ func createCleanEncodingSystems() {
 		BrightCyan:    NewColor(ColorConfig{ANSI: 14, Name: "ansi_bright_cyan"}),
 		BrightWhite:   NewColor(ColorConfig{ANSI: 15, Name: "ansi_bright_white"}),
 	}
-	
+
 	// TrueColor encoding system (24-bit RGB)
 	TrueColor = &EncodingSystem{
 		Black:   NewColor(ColorConfig{R: 0, G: 0, B: 0, Name: "true_black"}),
@@ -132,7 +132,7 @@ func createCleanEncodingSystems() {
 		Magenta: NewColor(ColorConfig{R: 255, G: 0, B: 255, Name: "true_magenta"}),
 		Cyan:    NewColor(ColorConfig{R: 0, G: 255, B: 255, Name: "true_cyan"}),
 		White:   NewColor(ColorConfig{R: 255, G: 255, B: 255, Name: "true_white"}),
-		
+
 		BrightBlack:   NewColor(ColorConfig{R: 128, G: 128, B: 128, Name: "true_bright_black"}),
 		BrightRed:     NewColor(ColorConfig{R: 255, G: 128, B: 128, Name: "true_bright_red"}),
 		BrightGreen:   NewColor(ColorConfig{R: 128, G: 255, B: 128, Name: "true_bright_green"}),
@@ -142,7 +142,7 @@ func createCleanEncodingSystems() {
 		BrightCyan:    NewColor(ColorConfig{R: 128, G: 255, B: 255, Name: "true_bright_cyan"}),
 		BrightWhite:   NewColor(ColorConfig{R: 255, G: 255, B: 255, Name: "true_bright_white"}),
 	}
-	
+
 	// 256-color encoding system
 	Color256 = &EncodingSystem{
 		Black:   NewColor(ColorConfig{Color256: 0, Name: "256_black"}),
@@ -153,7 +153,7 @@ func createCleanEncodingSystems() {
 		Magenta: NewColor(ColorConfig{Color256: 5, Name: "256_magenta"}),
 		Cyan:    NewColor(ColorConfig{Color256: 6, Name: "256_cyan"}),
 		White:   NewColor(ColorConfig{Color256: 7, Name: "256_white"}),
-		
+
 		BrightBlack:   NewColor(ColorConfig{Color256: 8, Name: "256_bright_black"}),
 		BrightRed:     NewColor(ColorConfig{Color256: 9, Name: "256_bright_red"}),
 		BrightGreen:   NewColor(ColorConfig{Color256: 10, Name: "256_bright_green"}),
@@ -184,17 +184,17 @@ func createCleanThemeSystems() {
 		Lime:    MaterialLime,
 		Indigo:  MaterialIndigo,
 	}
-	
+
 	// Dracula theme
 	Dracula = &ThemeSystem{
-		Black:   NewHex("#282A36").WithName("dracula_black"),      // Dracula background
+		Black:   NewHex("#282A36").WithName("dracula_black"), // Dracula background
 		Red:     DraculaRed,
 		Green:   DraculaGreen,
 		Yellow:  DraculaYellow,
-		Blue:    NewHex("#6272A4").WithName("dracula_blue"),       // Dracula comment
+		Blue:    NewHex("#6272A4").WithName("dracula_blue"), // Dracula comment
 		Magenta: DraculaPurple,
 		Cyan:    DraculaCyan,
-		White:   NewHex("#F8F8F2").WithName("dracula_white"),      // Dracula foreground
+		White:   NewHex("#F8F8F2").WithName("dracula_white"), // Dracula foreground
 		Purple:  DraculaPurple,
 		Orange:  DraculaOrange,
 		Pink:    DraculaPink,
@@ -202,17 +202,17 @@ func createCleanThemeSystems() {
 		Lime:    DraculaGreen,
 		Indigo:  DraculaPurple,
 	}
-	
+
 	// Nord theme
 	Nord = &ThemeSystem{
-		Black:   NewHex("#2E3440").WithName("nord_black"),   // Nord polar night
+		Black:   NewHex("#2E3440").WithName("nord_black"), // Nord polar night
 		Red:     NordRed,
 		Green:   NordGreen,
 		Yellow:  NordYellow,
 		Blue:    NordBlue,
 		Magenta: NordPurple,
 		Cyan:    NordCyan,
-		White:   NewHex("#ECEFF4").WithName("nord_white"),   // Nord snow storm
+		White:   NewHex("#ECEFF4").WithName("nord_white"), // Nord snow storm
 		Purple:  NordPurple,
 		Orange:  NordOrange,
 		Pink:    NordPurple, // Nord doesn't have distinct pink
@@ -220,7 +220,7 @@ func createCleanThemeSystems() {
 		Lime:    NordGreen,
 		Indigo:  NordBlue,
 	}
-	
+
 	// GitHub theme
 	GitHub = &ThemeSystem{
 		Black:   NewHex("#24292e").WithName("github_black"),
@@ -243,7 +243,7 @@ func createCleanThemeSystems() {
 // updateCleanDefaultColors sets the global default colors based on current theme
 func updateCleanDefaultColors() {
 	var source *ThemeSystem
-	
+
 	switch currentTheme {
 	case "material":
 		source = Material
@@ -256,7 +256,7 @@ func updateCleanDefaultColors() {
 	default:
 		source = Material
 	}
-	
+
 	// Update default colors to follow the active theme
 	Black = source.Black
 	Red = source.Red

@@ -37,7 +37,7 @@ func newLogger(args ...any) *Logger {
 	// Separate functional options from other args
 	var opts []share.Option[LogOptions]
 	var cfgArgs []any
-	
+
 	for _, arg := range args {
 		switch v := arg.(type) {
 		case LogOption:

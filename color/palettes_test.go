@@ -15,10 +15,10 @@ func TestPaletteCreation(t *testing.T) {
 	cfg := DefaultPaletteConfig()
 	cfg.Name = "test"
 	cfg.Colors = map[string]Color{
-		"red": RGB(255, 0, 0),
+		"red":   RGB(255, 0, 0),
 		"green": RGB(0, 255, 0),
 	}
-	
+
 	p2 := NewPalette(cfg)
 	if len(p2) != 2 {
 		t.Errorf("NewPalette should create palette with 2 colors, got %d", len(p2))
@@ -73,7 +73,7 @@ func TestPaletteMethods(t *testing.T) {
 		WithColor("yellow", RGB(255, 255, 0)),
 		WithColor("cyan", RGB(0, 255, 255)),
 	)
-	
+
 	merged := p.Merge(p2)
 	if len(merged) != 5 {
 		t.Errorf("Merge should create palette with 5 colors, got %d", len(merged))
@@ -255,7 +255,7 @@ func TestAllPalettes(t *testing.T) {
 func TestPaletteColorConsistency(t *testing.T) {
 	// Test that colors in palettes match their individual definitions
 	material := MaterialPalette()
-	
+
 	red, exists := material.Get("red")
 	if !exists {
 		t.Error("Material palette should contain 'red'")
@@ -278,24 +278,24 @@ func TestWithColorsOption(t *testing.T) {
 		"custom1": RGB(100, 100, 100),
 		"custom2": RGB(200, 200, 200),
 	}
-	
+
 	p := NewPaletteWith(
 		WithColors(colors),
 		WithColor("custom3", RGB(50, 50, 50)),
 	)
-	
+
 	if len(p) != 3 {
 		t.Errorf("Palette should have 3 colors, got %d", len(p))
 	}
-	
+
 	c1, exists1 := p.Get("custom1")
 	c2, exists2 := p.Get("custom2")
 	c3, exists3 := p.Get("custom3")
-	
+
 	if !exists1 || !exists2 || !exists3 {
 		t.Error("All custom colors should exist in palette")
 	}
-	
+
 	if c1.R != 100 || c2.R != 200 || c3.R != 50 {
 		t.Error("Custom colors should have correct RGB values")
 	}
@@ -303,7 +303,7 @@ func TestWithColorsOption(t *testing.T) {
 
 func TestDefaultPaletteConfig(t *testing.T) {
 	cfg := DefaultPaletteConfig()
-	
+
 	if cfg.Name != "default" {
 		t.Error("Default palette config should have name 'default'")
 	}

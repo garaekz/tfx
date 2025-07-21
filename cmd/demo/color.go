@@ -13,23 +13,23 @@ func runColorDemo() {
 
 	// 1. Basic color creation methods
 	fmt.Println("\n1. COLOR CREATION METHODS:")
-	
+
 	fmt.Print("   RGB Colors: ")
 	red := color.RGB(255, 0, 0)
 	green := color.RGB(0, 255, 0)
 	blue := color.RGB(0, 0, 255)
-	fmt.Printf("%s %s %s\n", 
-		red.Apply("RED"), 
-		green.Apply("GREEN"), 
+	fmt.Printf("%s %s %s\n",
+		red.Apply("RED"),
+		green.Apply("GREEN"),
 		blue.Apply("BLUE"))
 
 	fmt.Print("   Hex Colors: ")
 	orange := color.Hex("#FF8C00")
 	purple := color.Hex("#9932CC")
 	cyan := color.Hex("#00FFFF")
-	fmt.Printf("%s %s %s\n", 
-		orange.Apply("ORANGE"), 
-		purple.Apply("PURPLE"), 
+	fmt.Printf("%s %s %s\n",
+		orange.Apply("ORANGE"),
+		purple.Apply("PURPLE"),
 		cyan.Apply("CYAN"))
 
 	fmt.Print("   ANSI Colors: ")
@@ -67,7 +67,7 @@ func runColorDemo() {
 
 	// 5. Styling system
 	fmt.Println("\n5. STYLING SYSTEM:")
-	
+
 	fmt.Print("   Text Styling: ")
 	fmt.Printf("%s ", color.NewStyleWith(
 		color.WithText("BOLD"),
@@ -138,7 +138,7 @@ func runColorDemo() {
 	// 10. Rainbow text
 	fmt.Println("\n10. SPECIAL EFFECTS:")
 	fmt.Printf("   Rainbow: %s\n", color.RainbowText("RAINBOW TEXT", color.ModeTrueColor))
-	
+
 	// 11. Gradient text
 	gradientColors := []color.Color{color.MaterialRed, color.MaterialOrange, color.MaterialYellow}
 	fmt.Printf("   Gradient: %s\n", color.GradientText("GRADIENT TEXT", gradientColors, color.ModeTrueColor))
@@ -154,7 +154,7 @@ func runColorDemo() {
 
 	// 14. Palettes
 	fmt.Println("\n13. COLOR PALETTES:")
-	
+
 	fmt.Println("   Status Palette:")
 	statusPalette := color.StatusPalette()
 	for _, name := range []string{"success", "error", "warning", "info", "debug"} {

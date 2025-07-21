@@ -24,7 +24,7 @@ var (
 	Teal   = color.Teal
 	Lime   = color.Lime
 	Indigo = color.Indigo
-	
+
 	// Material theme colors (explicit)
 	MaterialRed    = color.Material.Red
 	MaterialGreen  = color.Material.Green
@@ -32,7 +32,7 @@ var (
 	MaterialYellow = color.Material.Yellow
 	MaterialPurple = color.Material.Purple
 	MaterialOrange = color.Material.Orange
-	
+
 	// Dracula theme colors (explicit)
 	DraculaRed    = color.Dracula.Red
 	DraculaGreen  = color.Dracula.Green
@@ -40,7 +40,7 @@ var (
 	DraculaYellow = color.Dracula.Yellow
 	DraculaPurple = color.Dracula.Purple
 	DraculaPink   = color.Dracula.Pink
-	
+
 	// Nord theme colors (explicit)
 	NordRed    = color.Nord.Red
 	NordGreen  = color.Nord.Green
@@ -80,7 +80,7 @@ func If(err error) *FluentLogger {
 	}
 }
 
-// IfWith creates a new fluent logger with a specific logger instance  
+// IfWith creates a new fluent logger with a specific logger instance
 func IfWith(logger *Logger, err error) *FluentLogger {
 	return &FluentLogger{
 		logger: logger,
@@ -196,13 +196,13 @@ func (f *FluentLogger) Send() bool {
 type BadgeStyle string
 
 const (
-	BadgeStyleModern    BadgeStyle = "modern"    // Modern rounded style
-	BadgeStyleClassic   BadgeStyle = "classic"   // Traditional square brackets
-	BadgeStyleMinimal   BadgeStyle = "minimal"   // Just colored text
-	BadgeStyleEmoji     BadgeStyle = "emoji"     // Emoji-based indicators
-	BadgeStyleIcon      BadgeStyle = "icon"      // Simple icon indicators
-	BadgeStyleGradient  BadgeStyle = "gradient"  // Gradient effect
-	BadgeStyleNeon      BadgeStyle = "neon"      // Neon-like glow effect
+	BadgeStyleModern   BadgeStyle = "modern"   // Modern rounded style
+	BadgeStyleClassic  BadgeStyle = "classic"  // Traditional square brackets
+	BadgeStyleMinimal  BadgeStyle = "minimal"  // Just colored text
+	BadgeStyleEmoji    BadgeStyle = "emoji"    // Emoji-based indicators
+	BadgeStyleIcon     BadgeStyle = "icon"     // Simple icon indicators
+	BadgeStyleGradient BadgeStyle = "gradient" // Gradient effect
+	BadgeStyleNeon     BadgeStyle = "neon"     // Neon-like glow effect
 )
 
 // ModernBadge creates a modern styled badge log entry
@@ -305,7 +305,7 @@ func WithUnderline() BadgeOption {
 
 // Predefined modern badge styles
 func SuccessBadge(tag, msg string) {
-	ModernBadge(tag, msg, 
+	ModernBadge(tag, msg,
 		WithBadgeColor(White),
 		WithBadgeBackground(MaterialGreen),
 		WithBadgeLevel(share.LevelSuccess),

@@ -157,7 +157,7 @@ func (c *Context) FatalIf(err error, msg string, args ...interface{}) {
 			errorFields[k] = v
 		}
 		errorFields["error"] = err.Error()
-		
+
 		c.logger.log(share.LevelFatal, fmt.Sprintf("%s: %v", formattedMsg, err), errorFields)
 		os.Exit(1)
 	}
@@ -172,7 +172,7 @@ func (c *Context) ErrorIf(err error, msg string, args ...interface{}) bool {
 			errorFields[k] = v
 		}
 		errorFields["error"] = err.Error()
-		
+
 		c.logger.log(share.LevelError, fmt.Sprintf("%s: %v", formattedMsg, err), errorFields)
 		return true
 	}
@@ -188,14 +188,14 @@ func (c *Context) WarnIf(err error, msg string, args ...interface{}) bool {
 			errorFields[k] = v
 		}
 		errorFields["error"] = err.Error()
-		
+
 		c.logger.log(share.LevelWarn, fmt.Sprintf("%s: %v", formattedMsg, err), errorFields)
 		return true
 	}
 	return false
 }
 
-// InfoIf logs an info message with context if err is not nil and returns true if error occurred  
+// InfoIf logs an info message with context if err is not nil and returns true if error occurred
 func (c *Context) InfoIf(err error, msg string, args ...interface{}) bool {
 	if err != nil {
 		formattedMsg := fmt.Sprintf(msg, args...)
@@ -204,7 +204,7 @@ func (c *Context) InfoIf(err error, msg string, args ...interface{}) bool {
 			errorFields[k] = v
 		}
 		errorFields["error"] = err.Error()
-		
+
 		c.logger.log(share.LevelInfo, fmt.Sprintf("%s: %v", formattedMsg, err), errorFields)
 		return true
 	}
@@ -220,7 +220,7 @@ func (c *Context) DebugIf(err error, msg string, args ...interface{}) bool {
 			errorFields[k] = v
 		}
 		errorFields["error"] = err.Error()
-		
+
 		c.logger.log(share.LevelDebug, fmt.Sprintf("%s: %v", formattedMsg, err), errorFields)
 		return true
 	}

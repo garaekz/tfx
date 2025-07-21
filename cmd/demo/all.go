@@ -13,25 +13,25 @@ func runAllDemos() {
 
 	// Run each demo with separators
 	runProgressDemo()
-	
+
 	time.Sleep(1 * time.Second)
 	fmt.Println("\n" + strings.Repeat("─", 50))
-	
+
 	runSpinnerDemo()
-	
+
 	time.Sleep(1 * time.Second)
 	fmt.Println("\n" + strings.Repeat("─", 50))
-	
+
 	runColorDemo()
-	
+
 	time.Sleep(1 * time.Second)
 	fmt.Println("\n" + strings.Repeat("─", 50))
-	
+
 	runLogxDemo()
-	
+
 	time.Sleep(1 * time.Second)
 	fmt.Println("\n" + strings.Repeat("─", 50))
-	
+
 	runMultipathDemo()
 
 	fmt.Println("\n" + strings.Repeat("═", 50))

@@ -25,5 +25,5 @@ var ANSISeq = share.ANSISeq
 //
 // For the new clean color API, use:
 // - color.ANSI.Blue (for ANSI encoding)
-// - color.Material.Blue (for Material theme)  
+// - color.Material.Blue (for Material theme)
 // - color.Blue (for default colors following active theme)

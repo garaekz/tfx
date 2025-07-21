@@ -22,7 +22,7 @@ func runColorEncodingDemo() {
 
 	// 2. ENCODING SYSTEMS - The elegant new API!
 	fmt.Println("\n2. ENCODING SYSTEMS (color.ENCODING.Color):")
-	
+
 	// ANSI Colors (16 colors) - CLEAN!
 	fmt.Println("\n   ANSI Colors (16-color support) - CLEAN API:")
 	fmt.Printf("   color.ANSI.Red:     %s%s%s\n", color.ANSI.Red.Render(color.ModeANSI), "ANSI Red Text", color.Reset)
@@ -46,7 +46,7 @@ func runColorEncodingDemo() {
 
 	// 3. THEME SYSTEMS - The beautiful new API!
 	fmt.Println("\n3. THEME SYSTEMS (color.THEME.Color) - CLEAN API:")
-	
+
 	// Material Design Theme - CLEAN!
 	fmt.Println("\n   Material Design Theme - CLEAN API:")
 	fmt.Printf("   color.Material.Red:    %s%s%s\n", color.Material.Red.Render(color.ModeTrueColor), "Material Red", color.Reset)
@@ -83,7 +83,7 @@ func runColorEncodingDemo() {
 	fmt.Println("\n4. DEFAULT COLORS (Follow Active Theme) - MOST ELEGANT:")
 	fmt.Printf("Current theme: %s\n", color.GetDefaultTheme())
 	fmt.Printf("Current encoding: %s\n", color.GetDefaultEncoding())
-	
+
 	fmt.Printf("color.Red:    %s%s%s\n", color.Red.Render(color.GetDefaultEncoding()), "Default Red (follows theme)", color.Reset)
 	fmt.Printf("color.Blue:   %s%s%s\n", color.Blue.Render(color.GetDefaultEncoding()), "Default Blue (follows theme)", color.Reset)
 	fmt.Printf("color.Green:  %s%s%s\n", color.Green.Render(color.GetDefaultEncoding()), "Default Green (follows theme)", color.Reset)
@@ -91,7 +91,7 @@ func runColorEncodingDemo() {
 
 	// 5. THEME SWITCHING DEMONSTRATION
 	fmt.Println("\n5. THEME SWITCHING - WATCH THE MAGIC:")
-	
+
 	// Switch to Dracula
 	fmt.Println("\n   Switching to Dracula theme...")
 	color.UseDracula()
@@ -115,11 +115,11 @@ func runColorEncodingDemo() {
 
 	// 6. ENCODING SWITCHING
 	fmt.Println("\n6. ENCODING SWITCHING:")
-	
+
 	// Switch encoding
 	fmt.Println("\n   Current encoding: ANSI")
 	fmt.Printf("   color.Material.Blue (ANSI): %s%s%s\n", color.Material.Blue.Render(color.ModeANSI), "ANSI Mode", color.Reset)
-	
+
 	fmt.Println("\n   Switching to TrueColor encoding...")
 	color.SetDefaultEncoding(color.ModeTrueColor)
 	fmt.Printf("   color.Material.Blue (True): %s%s%s\n", color.Material.Blue.Render(color.ModeTrueColor), "TrueColor Mode", color.Reset)
@@ -128,10 +128,10 @@ func runColorEncodingDemo() {
 	fmt.Println("\n7. API ELEGANCE COMPARISON:")
 	fmt.Println("\n   🚫 OLD UGLY API (eliminated):")
 	fmt.Println("   ❌ color.ANSIColors.Blue")
-	fmt.Println("   ❌ color.TrueColorColors.Blue") 
+	fmt.Println("   ❌ color.TrueColorColors.Blue")
 	fmt.Println("   ❌ color.MaterialColors.Blue")
 	fmt.Println("   ❌ color.DBlue")
-	
+
 	fmt.Println("\n   ✅ NEW CLEAN API (revolutionary):")
 	fmt.Println("   ✨ color.ANSI.Blue")
 	fmt.Println("   ✨ color.TrueColor.Blue")
@@ -144,24 +144,24 @@ func runColorEncodingDemo() {
 	fmt.Println("   color.NewRGB(255, 87, 51)")
 	fmt.Println("   color.NewANSI(1)")
 	fmt.Println("   color.NewColor256(196)")
-	
+
 	fmt.Println("\n   // Explicit encoding (clean!)")
 	fmt.Println("   color.ANSI.Blue")
 	fmt.Println("   color.TrueColor.Blue")
 	fmt.Println("   color.Color256.Blue")
-	
+
 	fmt.Println("\n   // Explicit theme (beautiful!)")
 	fmt.Println("   color.Material.Blue")
 	fmt.Println("   color.Dracula.Blue")
 	fmt.Println("   color.Nord.Blue")
-	
+
 	fmt.Println("\n   // Default (most elegant!)")
 	fmt.Println("   color.Blue")
 	fmt.Println("   color.Red")
 	fmt.Println("   color.Green")
 
 	fmt.Println("\n✅ Clean Color Encoding System - Revolutionary API Completed!")
-	fmt.Printf("🎯 No more ugly names like %sANSIColors%s, %sTrueColorColors%s, %sDBlue%s!\n", 
+	fmt.Printf("🎯 No more ugly names like %sANSIColors%s, %sTrueColorColors%s, %sDBlue%s!\n",
 		color.Red.Render(color.GetDefaultEncoding()), color.Reset,
 		color.Red.Render(color.GetDefaultEncoding()), color.Reset,
 		color.Red.Render(color.GetDefaultEncoding()), color.Reset)
