@@ -57,11 +57,11 @@ func TestMultiplexerConcurrency(t *testing.T) {
 	var wg sync.WaitGroup
 
 	// Concurrent mounting
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			for j := 0; j < numVisuals; j++ {
+			for j := range numVisuals {
 				name := fmt.Sprintf("visual_%d_%d", id, j)
 				v := &dummyVisual{id: name}
 				mux.Mount(name, v)
@@ -78,12 +78,12 @@ func TestMultiplexerConcurrency(t *testing.T) {
 	}
 
 	// Concurrent access and unmounting
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(2)
 		go func(id int) {
 			defer wg.Done()
 			// Read operations
-			for j := 0; j < numVisuals; j++ {
+			for j := range numVisuals {
 				name := fmt.Sprintf("visual_%d_%d", id, j)
 				mux.GetVisual(name)
 			}
@@ -92,7 +92,7 @@ func TestMultiplexerConcurrency(t *testing.T) {
 		go func(id int) {
 			defer wg.Done()
 			// Unmount operations
-			for j := 0; j < numVisuals; j++ {
+			for j := range numVisuals {
 				name := fmt.Sprintf("visual_%d_%d", id, j)
 				mux.Unmount(name)
 			}

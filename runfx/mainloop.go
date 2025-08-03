@@ -32,6 +32,11 @@ type MainLoop struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
+	// Interactive input handling
+	keyReader    *KeyReader
+	interactives map[Visual]Interactive // Track which visuals are interactive
+	inputEnabled bool
+
 	mu         sync.RWMutex
 	output     io.Writer
 	nextRegion int
@@ -75,16 +80,19 @@ func NewMainLoop(tickInterval time.Duration) *MainLoop {
 	termWriter := writer.NewTerminalWriter(os.Stdout, terminalOpts)
 
 	return &MainLoop{
-		mux:        NewMultiplexer(),
-		terminal:   termWriter,
-		cursor:     &CursorManager{},
-		screen:     NewScreenManager(),
-		signals:    *terminal.NewSignalHandler(),
-		eventLoop:  NewEventLoop(tickInterval),
-		ttyInfo:    &ttyInfo,
-		stopCh:     make(chan struct{}),
-		output:     os.Stdout,
-		nextRegion: 0,
+		mux:          NewMultiplexer(),
+		terminal:     termWriter,
+		cursor:       &CursorManager{},
+		screen:       NewScreenManager(),
+		signals:      *terminal.NewSignalHandler(),
+		eventLoop:    NewEventLoop(tickInterval),
+		ttyInfo:      &ttyInfo,
+		keyReader:    NewKeyReader(os.Stdin),
+		interactives: make(map[Visual]Interactive),
+		inputEnabled: ttyInfo.IsTTY, // Only enable input in TTY environments
+		stopCh:       make(chan struct{}),
+		output:       os.Stdout,
+		nextRegion:   0,
 	}
 }
 
@@ -93,17 +101,20 @@ func NewMainLoopWithTerminal(tickInterval time.Duration, termWriter *writer.Term
 	ttyInfo := DetectTTY()
 
 	return &MainLoop{
-		mux:        NewMultiplexer(),
-		terminal:   termWriter,
-		cursor:     &CursorManager{},
-		screen:     NewScreenManager(),
-		signals:    *terminal.NewSignalHandler(),
-		eventLoop:  NewEventLoop(tickInterval),
-		ttyInfo:    &ttyInfo,
-		stopCh:     make(chan struct{}),
-		output:     termWriter,
-		nextRegion: 0,
-		testMode:   testMode,
+		mux:          NewMultiplexer(),
+		terminal:     termWriter,
+		cursor:       &CursorManager{},
+		screen:       NewScreenManager(),
+		signals:      *terminal.NewSignalHandler(),
+		eventLoop:    NewEventLoop(tickInterval),
+		ttyInfo:      &ttyInfo,
+		keyReader:    NewKeyReader(nil), // Use default stdin
+		interactives: make(map[Visual]Interactive),
+		inputEnabled: !testMode && ttyInfo.IsTTY, // Disable input in test mode unless forced
+		stopCh:       make(chan struct{}),
+		output:       termWriter,
+		nextRegion:   0,
+		testMode:     testMode,
 	}
 }
 
@@ -152,6 +163,31 @@ func (ml *MainLoop) Mount(v Visual) (unmount func(), err error) {
 	return unmount, nil
 }
 
+// MountInteractive implements the InteractiveLoop interface
+func (ml *MainLoop) MountInteractive(v Interactive) (unmount func(), err error) {
+	// First mount as a regular visual
+	baseUnmount, err := ml.Mount(v)
+	if err != nil {
+		return nil, err
+	}
+
+	// Track this visual as interactive
+	ml.mu.Lock()
+	ml.interactives[v] = v
+	ml.mu.Unlock()
+
+	// Return combined unmount function
+	return func() {
+		// Remove from interactive tracking
+		ml.mu.Lock()
+		delete(ml.interactives, v)
+		ml.mu.Unlock()
+
+		// Call base unmount
+		baseUnmount()
+	}, nil
+}
+
 // Run implements the Loop interface
 func (ml *MainLoop) Run(ctx context.Context) error {
 	if !atomic.CompareAndSwapInt32(&ml.isRunning, 0, 1) {
@@ -182,6 +218,11 @@ func (ml *MainLoop) Run(ctx context.Context) error {
 
 	// Start event loop
 	go ml.eventLoop.Run(ml.ctx)
+
+	// Start keyboard input handler if enabled
+	if ml.inputEnabled {
+		go ml.handleKeyboardInput()
+	}
 
 	// Main render loop
 	ticker := time.NewTicker(16 * time.Millisecond) // ~60fps
@@ -226,6 +267,20 @@ func (ml *MainLoop) Stop() error {
 // IsRunning implements the Loop interface
 func (ml *MainLoop) IsRunning() bool {
 	return atomic.LoadInt32(&ml.isRunning) != 0
+}
+
+// EnableInteractive enables keyboard input handling for the loop.
+// This starts the keyboard input goroutine if input is supported.
+func (ml *MainLoop) EnableInteractive() {
+	ml.mu.Lock()
+	defer ml.mu.Unlock()
+
+	if !ml.inputEnabled {
+		return // Not a TTY or input disabled
+	}
+
+	// Start keyboard input handling in background
+	go ml.handleKeyboardInput()
 }
 
 // renderFrame renders all mounted visuals
@@ -321,10 +376,7 @@ func (ml *MainLoop) reallocateRegions(rows int) {
 	}
 
 	// Simple reallocation: divide available rows evenly
-	linesPerVisual := rows / len(visuals)
-	if linesPerVisual < 1 {
-		linesPerVisual = 1
-	}
+	linesPerVisual := max(rows/len(visuals), 1)
 
 	for i, visualName := range visuals {
 		start := i * linesPerVisual
@@ -333,6 +385,42 @@ func (ml *MainLoop) reallocateRegions(rows int) {
 			end = rows - 1
 		}
 		ml.screen.Reallocate(visualName, start, end)
+	}
+}
+
+// handleKeyboardInput runs in a separate goroutine to process keyboard input
+func (ml *MainLoop) handleKeyboardInput() {
+	for {
+		// Get the current context, or use a background context if not set yet
+		ml.ctxMu.Lock()
+		ctx := ml.ctx
+		if ctx == nil {
+			ctx = context.Background()
+		}
+		ml.ctxMu.Unlock()
+
+		// Read the next key input
+		key, err := ml.keyReader.ReadKey(ctx)
+		if err != nil {
+			// Context cancelled or input error
+			return
+		}
+
+		// Distribute the key to all interactive visuals
+		ml.mu.RLock()
+		interactives := make([]Interactive, 0, len(ml.interactives))
+		for _, interactive := range ml.interactives {
+			interactives = append(interactives, interactive)
+		}
+		ml.mu.RUnlock()
+
+		// Send key to all interactive visuals
+		// The first one to handle it (return true) stops propagation
+		for _, interactive := range interactives {
+			if interactive.OnKey(key) {
+				break // Key was handled, stop propagation
+			}
+		}
 	}
 }
 

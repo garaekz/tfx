@@ -258,7 +258,7 @@ func TestMainLoopConcurrency(t *testing.T) {
 
 	// Concurrent mounting
 	var wg sync.WaitGroup
-	for i := 0; i < numVisuals; i++ {
+	for i := range numVisuals {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()

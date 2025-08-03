@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/garaekz/tfx/color"
-	"github.com/garaekz/tfx/logx"
+	"github.com/garaekz/tfx/logfx"
 )
 
-func runLogxDemo() {
+func runlogfxDemo() {
 	// 🎬 Opening Cinematic
 	fmt.Println("\n🌟 ═══════════════════════════════════════════════════════════════")
-	fmt.Println("🎨                   TFX LOGX SHOWCASE                       🎨")
+	fmt.Println("🎨                   TFX logfx SHOWCASE                       🎨")
 	fmt.Println("🌟 ═══════════════════════════════════════════════════════════════")
 	fmt.Println("🚀 Building the future of terminal logging, one badge at a time")
 	fmt.Println()
@@ -20,41 +20,41 @@ func runLogxDemo() {
 	// 🎭 Chapter 1: The Art of Visual Communication
 	fmt.Println("\n🎭 Chapter 1: THE ART OF VISUAL COMMUNICATION")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	logx.Trace("🔍 Deep system introspection - following the electron trails")
-	logx.Debug("🛠️  Engineering insights - watching the gears turn")
-	logx.Info("ℹ️  Narrative unfolding - the story your system tells")
-	logx.Success("✨ Victory achieved - dreams becoming reality")
-	logx.Warn("⚠️  Storm approaching - wisdom from the edge")
-	logx.Error("🔥 Phoenix moment - rising from digital ashes")
+	logfx.Trace("🔍 Deep system introspection - following the electron trails")
+	logfx.Debug("🛠️  Engineering insights - watching the gears turn")
+	logfx.Info("ℹ️  Narrative unfolding - the story your system tells")
+	logfx.Success("✨ Victory achieved - dreams becoming reality")
+	logfx.Warn("⚠️  Storm approaching - wisdom from the edge")
+	logfx.Error("🔥 Phoenix moment - rising from digital ashes")
 
 	time.Sleep(400 * time.Millisecond)
 
 	// 🏆 Chapter 2: Badge Mastery - Where Form Meets Function
 	fmt.Println("\n🏆 Chapter 2: BADGE MASTERY - WHERE FORM MEETS FUNCTION")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	logx.SuccessBadge("API", "🌐 Quantum entanglement with external dimensions")
-	logx.ErrorBadge("DB", "🗄️  Digital ocean levels critical - send backup whales")
-	logx.WarnBadge("CACHE", "⚡ Memory palace reorganizing - philosophers confused")
-	logx.InfoBadge("SYS", "🔄 Cosmic alignment achieved - servers humming in harmony")
-	logx.DebugBadge("AUTH", "🔐 Digital handshakes verified - trust protocols engaged")
+	logfx.SuccessBadge("API", "🌐 Quantum entanglement with external dimensions")
+	logfx.ErrorBadge("DB", "🗄️  Digital ocean levels critical - send backup whales")
+	logfx.WarnBadge("CACHE", "⚡ Memory palace reorganizing - philosophers confused")
+	logfx.InfoBadge("SYS", "🔄 Cosmic alignment achieved - servers humming in harmony")
+	logfx.DebugBadge("AUTH", "🔐 Digital handshakes verified - trust protocols engaged")
 
 	// ✨ Chapter 2.5: Visual Badge Magic
 	fmt.Println("\n✨ Visual Badge Magic:")
-	logx.BadgeWithOptions("DEPLOY", "🚀 Rocket ship departing for production", logx.BadgeOptions{
+	logfx.BadgeWithOptions("DEPLOY", "🚀 Rocket ship departing for production", logfx.BadgeOptions{
 		Gradient: []color.Color{color.NewHex("D38312"), color.NewHex("A83279")},
 	})
-	logx.BadgeWithOptions("NEON", "💎 Cyberpunk dreams materializing", logx.BadgeOptions{
+	logfx.BadgeWithOptions("NEON", "💎 Cyberpunk dreams materializing", logfx.BadgeOptions{
 		Neon: true,
 	})
-	logx.BadgeWithOptions("THEME", "🎨 Canvas painted with midnight blues", logx.BadgeOptions{
+	logfx.BadgeWithOptions("THEME", "🎨 Canvas painted with midnight blues", logfx.BadgeOptions{
 		Theme: "blue",
 		Bold:  true,
 	})
-	logx.BadgeWithOptions("PULSE", "💓 Digital heartbeat detected", logx.BadgeOptions{
+	logfx.BadgeWithOptions("PULSE", "💓 Digital heartbeat detected", logfx.BadgeOptions{
 		Blink:      true,
 		Foreground: color.NewHex("FF6B6B"),
 	})
-	logx.BadgeWithOptions("EPIC", "🌈 Where typography becomes art", logx.BadgeOptions{
+	logfx.BadgeWithOptions("EPIC", "🌈 Where typography becomes art", logfx.BadgeOptions{
 		Bold:       true,
 		Italic:     true,
 		Underline:  true,
@@ -66,14 +66,14 @@ func runLogxDemo() {
 	// 🌈 Chapter 3: The Startup Symphony
 	fmt.Println("\n🌈 Chapter 3: THE STARTUP SYMPHONY")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	logx.APIBadge("🌐 GraphQL mutations dancing through fiber optics", true)
-	logx.DatabaseBadge("🗄️  MongoDB clusters singing in perfect harmony", true)
-	logx.AuthBadge("🔐 OAuth2 tokens born from digital stardust", true)
-	logx.CacheBadge("⚡ Redis pipelines conducting lightning symphonies", true)
-	logx.SystemBadge("🔄 Kubernetes orchestrating the cloud ballet")
-	logx.InfoBadge("STARTUP", "💡 Where unicorns meet terminal rainbows")
-	logx.WarnBadge("GROWTH", "📈 Scaling faster than coffee consumption")
-	logx.ErrorBadge("HUSTLE", "💪 Failing fast, learning faster")
+	logfx.APIBadge("🌐 GraphQL mutations dancing through fiber optics", true)
+	logfx.DatabaseBadge("🗄️  MongoDB clusters singing in perfect harmony", true)
+	logfx.AuthBadge("🔐 OAuth2 tokens born from digital stardust", true)
+	logfx.CacheBadge("⚡ Redis pipelines conducting lightning symphonies", true)
+	logfx.SystemBadge("🔄 Kubernetes orchestrating the cloud ballet")
+	logfx.InfoBadge("STARTUP", "💡 Where unicorns meet terminal rainbows")
+	logfx.WarnBadge("GROWTH", "📈 Scaling faster than coffee consumption")
+	logfx.ErrorBadge("HUSTLE", "💪 Failing fast, learning faster")
 
 	time.Sleep(400 * time.Millisecond)
 
@@ -84,15 +84,15 @@ func runLogxDemo() {
 	dataErr := errors.New("reality validation failure")
 	var noErr error
 
-	if logx.ErrorIf(networkErr, "🌌 Network spirits are restless tonight") {
+	if logfx.ErrorIf(networkErr, "🌌 Network spirits are restless tonight") {
 		fmt.Println("   ✨ Error captured in digital amber")
 	}
 
-	if logx.WarnIf(dataErr, "⚠️  The data oracle speaks of inconsistencies") {
+	if logfx.WarnIf(dataErr, "⚠️  The data oracle speaks of inconsistencies") {
 		fmt.Println("   ✨ Warning whispered to the terminal winds")
 	}
 
-	if !logx.InfoIf(noErr, "This won't be logged") {
+	if !logfx.InfoIf(noErr, "This won't be logged") {
 		fmt.Println("   ✨ Silence is golden - no error, no noise")
 	}
 
@@ -101,18 +101,18 @@ func runLogxDemo() {
 	// 🏛️ Chapter 5: Enterprise Theater
 	fmt.Println("\n🏛️ Chapter 5: ENTERPRISE THEATER")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	logx.DatabaseBadge("🛒 Order #12345 crystallized in digital vaults", true)
-	logx.APIBadge("💳 Payment electrons successfully transferred", true)
-	logx.CacheBadge("📦 Product catalog materialized in memory palace", true)
-	logx.DatabaseBadge("🌪️  User preferences scattered by digital winds", false)
-	logx.APIBadge("🚫 External service vanished into the void", false)
+	logfx.DatabaseBadge("🛒 Order #12345 crystallized in digital vaults", true)
+	logfx.APIBadge("💳 Payment electrons successfully transferred", true)
+	logfx.CacheBadge("📦 Product catalog materialized in memory palace", true)
+	logfx.DatabaseBadge("🌪️  User preferences scattered by digital winds", false)
+	logfx.APIBadge("🚫 External service vanished into the void", false)
 
 	time.Sleep(400 * time.Millisecond)
 
 	// 🌊 Chapter 6: The Context Rivers
 	fmt.Println("\n🌊 Chapter 6: THE CONTEXT RIVERS")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	ctx := logx.WithFields(map[string]any{
+	ctx := logfx.WithFields(map[string]any{
 		"request_id": "req-cosmic-123",
 		"user_id":    "user-stardust-789",
 		"operation":  "soul_update",
@@ -136,19 +136,19 @@ func runLogxDemo() {
 	// ⚡ Chapter 7: The Three Paths of Creation
 	fmt.Println("\n⚡ Chapter 7: THE THREE PATHS OF CREATION")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	expressLogger := logx.Log()
+	expressLogger := logfx.Log()
 	expressLogger.Info("🏃 Express path - swift as lightning")
 
-	configLogger := logx.LogWithConfig(logx.LogOptions{
-		Level:     logx.LevelDebug,
+	configLogger := logfx.LogWithConfig(logfx.LogOptions{
+		Level:     logfx.LevelDebug,
 		Timestamp: true,
 	})
 	configLogger.Debug("🏗️  Config path - engineered with precision")
 
-	fluentLogger := logx.LogWith(
-		logx.WithLevel(logx.LevelInfo),
-		logx.WithTimestamp(false),
-		logx.WithDevelopment(),
+	fluentLogger := logfx.LogWith(
+		logfx.WithLevel(logfx.LevelInfo),
+		logfx.WithTimestamp(false),
+		logfx.WithDevelopment(),
 	)
 	fluentLogger.Success("🌊 Fluent path - flowing like liquid poetry")
 
@@ -157,13 +157,13 @@ func runLogxDemo() {
 	// 🎪 Chapter 8: The Logger Personalities
 	fmt.Println("\n🎪 Chapter 8: THE LOGGER PERSONALITIES")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	devLogger := logx.DevLogger()
+	devLogger := logfx.DevLogger()
 	devLogger.Debug("🛠️  Development oracle - seeing through code veils")
 
-	consoleLogger := logx.ConsoleLogger()
+	consoleLogger := logfx.ConsoleLogger()
 	consoleLogger.Info("🖥️  Console poet - painting words on terminal canvas")
 
-	structuredLogger := logx.StructuredLogger()
+	structuredLogger := logfx.StructuredLogger()
 	structuredLogger.Info("📋 Structured sage - speaking in machine tongues")
 
 	time.Sleep(400 * time.Millisecond)
@@ -173,13 +173,13 @@ func runLogxDemo() {
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	testErr := errors.New("cosmic service disruption")
 
-	logx.If(testErr).AsError().Msg("🌌 Service portal sealed by interdimensional forces")
-	logx.If(testErr).
+	logfx.If(testErr).AsError().Msg("🌌 Service portal sealed by interdimensional forces")
+	logfx.If(testErr).
 		AsWarn().
 		WithField("retry_count", 3).
 		Msg("🔄 Attempting quantum tunnel reconnection")
 
-	logx.If(testErr).
+	logfx.If(testErr).
 		AsError().
 		WithField("service", "soul-auth").
 		WithField("timeout", "30s of eternity").
@@ -191,10 +191,10 @@ func runLogxDemo() {
 	// 💫 Chapter 10: The Performance Symphony
 	fmt.Println("\n💫 Chapter 10: THE PERFORMANCE SYMPHONY")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	logx.SystemBadge("💾 Memory rivers flowing at 234MB - crystal clear")
-	logx.SystemBadge("🖥️  CPU dancing at 12% - energy in perfect harmony")
-	logx.SystemBadge("🌐 Network whispers at 45ms - messages swift as wind")
-	logx.SystemBadge("⚡ Response lightning at 120ms - speed of thought")
+	logfx.SystemBadge("💾 Memory rivers flowing at 234MB - crystal clear")
+	logfx.SystemBadge("🖥️  CPU dancing at 12% - energy in perfect harmony")
+	logfx.SystemBadge("🌐 Network whispers at 45ms - messages swift as wind")
+	logfx.SystemBadge("⚡ Response lightning at 120ms - speed of thought")
 
 	// 🎆 The Grand Finale
 	fmt.Println("\n🎆 ═══════════════════════════════════════════════════════════════")
@@ -202,15 +202,15 @@ func runLogxDemo() {
 	fmt.Println("🎆 ═══════════════════════════════════════════════════════════════")
 
 	// Final showcase of mastery
-	logx.InfoBadge("FINALE", "🎭 All systems awakening from digital dreams")
-	logx.WarnBadge("MEMORY", "💭 Cache poets writing verses in silicon")
-	logx.ErrorBadge("PHOENIX", "🔥 Errors transforming into wisdom")
+	logfx.InfoBadge("FINALE", "🎭 All systems awakening from digital dreams")
+	logfx.WarnBadge("MEMORY", "💭 Cache poets writing verses in silicon")
+	logfx.ErrorBadge("PHOENIX", "🔥 Errors transforming into wisdom")
 
 	time.Sleep(500 * time.Millisecond)
 
 	// 🌟 The Epic Conclusion
 	fmt.Println("\n🌟 ═══════════════════════════════════════════════════════════════")
-	fmt.Println("✨                  THE LOGX MANIFESTO                         ✨")
+	fmt.Println("✨                  THE logfx MANIFESTO                         ✨")
 	fmt.Println("🌟 ═══════════════════════════════════════════════════════════════")
 	fmt.Println("")
 	fmt.Println("🎨 ARTISTRY ACHIEVED:")
@@ -227,5 +227,5 @@ func runLogxDemo() {
 	fmt.Println("🌟 Where developers become digital poets")
 	fmt.Println("✨ Where terminals transform into galleries")
 	fmt.Println("")
-	fmt.Println("🎉 TFX LogX - Painting dreams in terminal light since 2025")
+	fmt.Println("🎉 TFX logfx - Painting dreams in terminal light since 2025")
 }

@@ -1,6 +1,6 @@
 # TFX – Multipath API Philosophy
 
-> “If there’s only one way to do it, it’s not the right way.”  
+> "If there's only one way to do it, it's not the right way."  
 > — Core Principle of TFX
 
 ---
@@ -23,7 +23,7 @@ All styles share the same internal engine — no duplicated logic, no hidden sid
 
 ## 2. 🧰 Internal Consistency via `internal/share`
 
-TFX provides two DX primitives to enable clean multipath APIs:
+TFX provides the `Overload[T]` primitive to enable clean multipath APIs:
 
 ### 2.1 `Overload[T]`
 
@@ -34,27 +34,37 @@ cfg := share.Overload[Config](args, DefaultConfig())
 - Accepts **0 or 1** anonymous value.
 - Handles both `Config` and `*Config`.
 - Falls back safely to the provided default.
-
-### 2.2 `ApplyOptions[T]` (Functional Option Set)
-
-```go
-share.ApplyOptions(&cfg,
-    progress.WithText("Downloading"),
-    progress.WithColor(color.Cyan),
-)
-```
-
-- Avoids long parameter lists.
 - Zero reflection — 100% compile-time safety.
 - Uses Go generics for reusability.
+- **Panics on invalid arguments** — ensures type safety at runtime.
 
-### 2.3 `OverloadWithOptions[T]`
+**🚨 Enforcement**: All TFX packages **MUST** use `share.Overload[T]` for `...any` parameters. This maintains consistency across the ecosystem and provides predictable error behavior.
+
+### 2.2 Real Implementation Example
+
+Here's how the progress package implements the multipath pattern:
 
 ```go
-cfg := share.OverloadWithOptions[Config](args, DefaultConfig(), userOpts...)
+// Primary function accepts ...any but uses Overload internally
+func Start(args ...any) *Progress {
+	cfg := share.Overload(args, DefaultProgressConfig())
+	p := newProgress(cfg)
+	p.Start()
+	return p
+}
+
+// Usage examples:
+progress.Start()                                    // Express: zero-config
+progress.Start(progress.Config{Total: 100})        // Instantiated: config struct
+progress.New().Total(100).Label("Sync").Start()    // DSL: chained builder
 ```
 
-Combines positional + keyed options in one call.
+The `Start` function:
+
+- Accepts `...any` for flexibility
+- Uses `share.Overload` internally for type safety
+- Supports both zero-config and config struct usage
+- Panics if invalid arguments are provided
 
 ---
 
@@ -63,31 +73,34 @@ Combines positional + keyed options in one call.
 Every TFX package adheres to this baseline:
 
 ```go
-// 1. Quick default
+// 1. Quick default (Express)
 progress.Start()
 
-// 2. Config struct
-cfg := progress.Config{Text: "Sync", Color: color.Green}
+// 2. Config struct (Instantiated)
+cfg := progress.Config{Total: 100, Label: "Sync"}
 progress.Start(cfg)
 
-// 3. Fluent builder
-progress.Start(
-    progress.WithText("Sync"),
-    progress.WithColor(color.Green),
-)
+// 3. Fluent builder (DSL)
+progress.New().
+    Total(100).
+    Label("Sync").
+    Start()
 
 // 4. Full object lifecycle
-bar := progress.New(progress.WithWidth(40))
+bar := progress.New().Total(100).Build()
 bar.Update(75)
 bar.Complete()
 ```
 
 ### ✅ Enforcement Checklist
 
-- `Start()` must work with **zero args**.
-- An instantiated form (`Start(cfg)` or `New(...)`) must exist.
-- All `WithX` options must live in the **same package**.
-- If `...any` is exposed, provide a **typed sibling** like `StartWith(cfg)` for IDE safety.
+- Primary function (e.g., `Start()`, `Init()`, `Run()`) must work with **zero args**.
+- Primary function must accept `...any` and use `share.Overload[T]` internally.
+- An instantiated form (`Start(cfg)` or similar) must exist.
+- `New()` must exist for DSL chaining.
+- All DSL methods must live in the **same package** and return the builder type.
+- Builder must provide both `.Build()` and `.Start()` (or equivalent action) methods.
+- If `...any` is exposed, provide clear documentation for expected types and panic behavior.
 
 ---
 
@@ -102,32 +115,44 @@ bar.Complete()
 
 ## 5. 🧪 How to Build a New TFX Package
 
-1. Define a `Config` with sensible defaults.
-2. Provide `DefaultConfig()`.
-3. Create `WithX`-style options:
+1. Define a `Config` struct with sensible defaults.
+2. Provide `DefaultConfig()` function.
+3. Create a builder type (e.g., `ProgressBuilder`) with chaining methods:
 
    ```go
-   func WithText(text string) share.Option[Config] {
-       return func(c *Config) { c.Text = text }
+   func (b *Builder) Label(text string) *Builder {
+       b.config.Label = text
+       return b
    }
    ```
 
-4. Expose all three entry points: `Start()`, `Start(cfg)`, `Start(opts...)`.
-5. Use `share.OverloadWithOptions` internally.
+4. Implement the primary function with `...any` and `share.Overload`:
+
+   ```go
+   func Start(args ...any) *YourType {
+       cfg := share.Overload(args, DefaultConfig())
+       return newYourType(cfg)
+   }
+   ```
+
+5. Expose all three entry points: primary function (e.g., `Start()`), `Start(cfg)`, and `New()`.
 6. Document all usage styles via GoDoc.
 
 ---
 
 ## 6. ❓ FAQ
 
-**Q:** Isn’t `...any` evil?  
-**A:** It’s scoped and type-switched. Regular users stay in safe APIs.
+**Q:** Isn't `...any` risky?  
+**A:** It's scoped and type-switched with `share.Overload`. Regular users stay in safe, typed APIs.
 
-**Q:** Isn’t this over-engineered?  
+**Q:** Why not use functional options?  
+**A:** Builder patterns provide better IDE support and are more explicit about available options.
+
+**Q:** What happens if I pass wrong arguments to `Start()`?  
+**A:** `share.Overload` will panic with a clear error message. This is intentional — fail fast and loud.
+
+**Q:** Isn't this over-engineered?  
 **A:** Not if it lets beginners and power users coexist without friction.
-
-**Q:** Why not use reflection?  
-**A:** It’s untestable and runtime-only. TFX stays fast, lean, and predictable.
 
 ---
 

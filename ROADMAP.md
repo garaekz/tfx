@@ -27,7 +27,7 @@ This document outlines the current feature set, future plans, and priorities for
 
 ### 🧱 Core Logging
 
-- `logx` package with multi-writer structured logs
+- `logfx` package with multi-writer structured logs
 - Badge-style logging (e.g. `[INFO]`, `[ERR]`, etc)
 - Color-aware writers: console + file with rotation
 - Contextual logging via `.WithFields()` and `.WithRequestID()`
@@ -78,7 +78,7 @@ This document outlines the current feature set, future plans, and priorities for
 
 ## 🧠 Planned (Post-v0.1.x)
 
-- `logx.Trace()` level (hidden by default)
+- `logfx.Trace()` level (hidden by default)
 - Theme preview playground (`themes_preview.go`)
 - Spinners with alternate glyph sets (e.g. braille, dot, arrows)
 - Theme-based progress/spinner layout presets

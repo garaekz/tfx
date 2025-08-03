@@ -13,7 +13,7 @@ func EnableDebug() {
 }
 
 // DebugLog prints debug info if debug mode is enabled
-func DebugLog(format string, args ...interface{}) {
+func DebugLog(format string, args ...any) {
 	if debugMode {
 		fmt.Fprintf(os.Stderr, "[RunFX DEBUG] "+format+"\n", args...)
 	}

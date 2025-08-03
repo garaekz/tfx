@@ -7,9 +7,10 @@ import (
 	"os"
 	"sync"
 
+	"golang.org/x/term"
+
 	"github.com/garaekz/tfx/color"
 	"github.com/garaekz/tfx/terminal"
-	"golang.org/x/term"
 )
 
 // TerminalWriter handles raw terminal output with double-buffering and color support
@@ -145,7 +146,7 @@ func (w *TerminalWriter) MoveCursor(row, col int) error {
 	}
 
 	// ANSI escape sequence to move cursor
-	sequence := []byte(fmt.Sprintf("\033[%d;%dH", row, col))
+	sequence := fmt.Appendf(nil, "\033[%d;%dH", row, col)
 	_, err := w.output.Write(sequence)
 	return err
 }

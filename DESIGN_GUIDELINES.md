@@ -72,7 +72,7 @@ bar2.Start()
 
 ## 🧱 File & Package Structure
 
-- Avoid `utils/` or `helpers/` — name by responsibility (`color`, `logx`, `writers`, `progress`, etc).
+- Avoid `utils/` or `helpers/` — name by responsibility (`color`, `logfx`, `writers`, `progress`, etc).
 - Internal helpers must live in `internal/share/`.
 - Functional options go in the same package as the consumer.
 - Keep public packages flat; no deep nesting.

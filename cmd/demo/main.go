@@ -36,8 +36,10 @@ func main() {
 		runColorEncodingDemo()
 	case "spinner", "--spinner", "-s":
 		// runSpinnerDemo()
-	case "logx", "--logx", "-l":
-		runLogxDemo()
+	case "logfx", "--logfx", "-l":
+		runlogfxDemo()
+	case "formfx", "--formfx", "-f":
+		DemoInteractiveFormFX()
 	case "multipath", "--multipath", "-m":
 		// runMultipathDemo()
 	case "showcase", "--showcase", "-sh":
@@ -64,7 +66,8 @@ func showHelp() {
 	fmt.Println("  color, -c        Show color system demonstrations")
 	fmt.Println("  color-encoding -ce   Show new color encoding system")
 	fmt.Println("  spinner, -s      Show spinner demonstrations")
-	fmt.Println("  logx, -l         Show logging system demonstrations")
+	fmt.Println("  logfx, -l         Show logging system demonstrations")
+	fmt.Println("  formfx, -f       Show interactive form demonstrations")
 	fmt.Println("  multipath, -m    Show multipath API demonstrations")
 	fmt.Println("  showcase, -sh    Show complete system showcase")
 	fmt.Println("  all, -a          Run all demonstrations")
@@ -77,5 +80,5 @@ func showHelp() {
 	fmt.Println("  ./demo color-encoding")
 	fmt.Println("  ./demo -s")
 	fmt.Println("  ./demo showcase")
-	fmt.Println("  ./demo logx")
+	fmt.Println("  ./demo logfx")
 }

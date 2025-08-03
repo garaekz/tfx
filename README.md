@@ -67,7 +67,7 @@ It is _not_ a TUI framework. It is a low-friction, highly composable set of tool
 | ----------------- | --------------------------------------------------------- |
 | `color/`          | Core color system: hex, RGB, ANSI, themes, rendering      |
 | `terminal/`       | Terminal detection and capability inference               |
-| `logx/`           | Structured, badge-style logging with writers              |
+| `logfx/`          | Structured, badge-style logging with writers              |
 | `progress/`       | Spinners and progress bars with auto-capability rendering |
 | `writers/`        | Console & file writers with rotation and theming          |
 | `internal/share/` | Internal DX helpers (option sets, overloads, conventions) |
@@ -77,11 +77,11 @@ It is _not_ a TUI framework. It is a low-friction, highly composable set of tool
 ## 🚀 Quickstart
 
 ```go
-import "github.com/garaekz/tfx/logx"
+import "github.com/garaekz/tfx/logfx"
 
 func main() {
-    logx.Success("Server started on port %d", 8080)
-    logx.Badge("DB", "Connected to postgres", color.MaterialGreen)
+    logfx.Success("Server started on port %d", 8080)
+    logfx.Badge("DB", "Connected to postgres", color.MaterialGreen)
 }
 ```
 
@@ -108,7 +108,7 @@ make demo
 
 # Or run specific demonstrations
 ./bin/demo progress    # Progress bars showcase
-./bin/demo color       # Color system showcase  
+./bin/demo color       # Color system showcase
 ./bin/demo spinner     # Spinners showcase
 ./bin/demo multipath   # Multipath API showcase
 ./bin/demo all         # Run all demonstrations
@@ -123,10 +123,10 @@ make demo
 TFX promotes a **multi-entry design** for each API:
 
 ```go
-logx.Success("Done!")                            // 1. Quick default
-logger := logx.New(...)
+logfx.Success("Done!")                            // 1. Quick default
+logger := logfx.New(...)
 logger.WithFields(...).Info("custom")            // 2. Instantiated style
-logx.If(err).As(logx.WARN).Msg("warn msg")       // 3. DSL / fluent
+logfx.If(err).As(logfx.WARN).Msg("warn msg")       // 3. DSL / fluent
 ```
 
 This consistency is achieved via internal helpers like `Overload()` and `Option[T]`.

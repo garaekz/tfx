@@ -15,7 +15,7 @@ test:
 #  Test only one package
 test-one:
 	@echo "Usage: make test-one PKG=path/to/package"
-	@echo "Example: make test-one PKG=./logx"
+	@echo "Example: make test-one PKG=./logfx"
 	@echo "Running tests for package: $(PKG)"
 	go test $(PKG) $(GO_TEST_FLAGS)
 

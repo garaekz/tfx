@@ -102,10 +102,7 @@ func (p *Progress) OnResize(cols, rows int) {
 
 	// Could adjust width to fit terminal
 	if cols > 0 && cols < p.width+20 { // Leave some margin
-		p.width = cols - 20
-		if p.width < 10 {
-			p.width = 10
-		}
+		p.width = max(cols-20, 10)
 	}
 }
 
@@ -157,11 +154,7 @@ func (p *Progress) Set(current int) {
 	}
 
 	// Clamp current to not exceed total
-	if current > p.total {
-		p.current = p.total
-	} else {
-		p.current = current
-	}
+	p.current = min(current, p.total)
 
 	// Always render to show the update
 	p.renderDirect()

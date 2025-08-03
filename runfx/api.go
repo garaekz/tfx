@@ -2,6 +2,7 @@ package runfx
 
 import (
 	"io"
+	"os"
 	"time"
 
 	"github.com/garaekz/tfx/internal/share"
@@ -20,6 +21,24 @@ func Start(args ...any) Loop {
 	return NewLoopWithConfig(cfg)
 }
 
+// StartInteractive creates and starts an interactive Loop with keyboard input.
+// INTERACTIVE path - supports two usage patterns:
+//   - StartInteractive()         // Interactive with defaults
+//   - StartInteractive(config)   // Interactive with config
+func StartInteractive(args ...any) InteractiveLoop {
+	cfg := share.Overload(args, DefaultConfig())
+	loop := NewLoopWithConfig(cfg)
+
+	// Enable interactive mode
+	if mainLoop, ok := loop.(*MainLoop); ok {
+		mainLoop.EnableInteractive()
+		return mainLoop
+	}
+
+	// Fallback - shouldn't happen with current implementation
+	return loop.(*MainLoop)
+}
+
 // NewLoopWithConfig creates a new Loop with the given configuration
 func NewLoopWithConfig(cfg Config) Loop {
 	ttyInfo := DetectTTY()
@@ -33,17 +52,20 @@ func NewLoopWithConfig(cfg Config) Loop {
 	termWriter := writer.NewTerminalWriter(cfg.Output, terminalOpts)
 
 	return &MainLoop{
-		mux:        NewMultiplexer(),
-		terminal:   termWriter,
-		cursor:     &CursorManager{},
-		screen:     NewScreenManager(),
-		signals:    *terminal.NewSignalHandler(),
-		eventLoop:  NewEventLoop(cfg.TickInterval),
-		ttyInfo:    &ttyInfo,
-		stopCh:     make(chan struct{}),
-		output:     cfg.Output,
-		nextRegion: 0,
-		testMode:   cfg.TestMode,
+		mux:          NewMultiplexer(),
+		terminal:     termWriter,
+		cursor:       &CursorManager{},
+		screen:       NewScreenManager(),
+		signals:      *terminal.NewSignalHandler(),
+		eventLoop:    NewEventLoop(cfg.TickInterval),
+		ttyInfo:      &ttyInfo,
+		keyReader:    NewKeyReader(os.Stdin),       // Initialize key reader with stdin
+		interactives: make(map[Visual]Interactive), // Initialize interactives map
+		inputEnabled: ttyInfo.IsTTY,                // Enable input in TTY environments
+		stopCh:       make(chan struct{}),
+		output:       cfg.Output,
+		nextRegion:   0,
+		testMode:     cfg.TestMode,
 	}
 }
 
