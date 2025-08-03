@@ -29,21 +29,21 @@ func main() {
 
 	switch command {
 	case "progress", "--progress", "-p":
-		runProgressDemo()
+		// runProgressDemo()
 	case "color", "--color", "-c":
 		runColorDemo()
 	case "color-encoding", "--color-encoding", "-ce":
 		runColorEncodingDemo()
 	case "spinner", "--spinner", "-s":
-		runSpinnerDemo()
+		// runSpinnerDemo()
 	case "logx", "--logx", "-l":
 		runLogxDemo()
 	case "multipath", "--multipath", "-m":
-		runMultipathDemo()
+		// runMultipathDemo()
 	case "showcase", "--showcase", "-sh":
-		runShowcaseDemo()
+		// runShowcaseDemo()
 	case "all", "--all", "-a":
-		runAllDemos()
+		// runAllDemos()
 	case "version", "--version", "-v":
 		fmt.Printf("TFX Demo v%s\n", version)
 	case "help", "--help", "-h":

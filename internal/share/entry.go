@@ -20,6 +20,7 @@ type Entry struct {
 	Timestamp time.Time
 	Caller    *CallerInfo
 	Context   context.Context
+	IndentStr string
 }
 
 // Writer defines the interface for log writers

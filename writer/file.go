@@ -40,7 +40,7 @@ func DefaultFileOptions() FileOptions {
 		MaxBackups:  3,
 		MaxAge:      30, // 30 days
 		Compress:    true,
-		Permissions: 0644,
+		Permissions: 0o644,
 	}
 }
 
@@ -48,7 +48,7 @@ func DefaultFileOptions() FileOptions {
 func NewFileWriter(filename string, opts FileOptions) (*FileWriter, error) {
 	// Ensure directory exists
 	dir := filepath.Dir(filename)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create log directory: %w", err)
 	}
 
@@ -111,6 +111,11 @@ func (w *FileWriter) Write(entry *share.Entry) error {
 	n, err := w.file.WriteString(output)
 	if err != nil {
 		return err
+	}
+
+	// Sync the file to ensure data is written to disk
+	if err := w.file.Sync(); err != nil {
+		return fmt.Errorf("failed to sync file: %w", err)
 	}
 
 	w.currentSize += int64(n)

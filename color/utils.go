@@ -390,7 +390,15 @@ func Border(text string, borderColor Color) string {
 
 	for _, line := range lines {
 		padding := strings.Repeat(" ", maxWidth-GetLength(line))
-		result += Apply("│", borderColor, ModeTrueColor) + " " + line + padding + " " + Apply("│", borderColor, ModeTrueColor) + "\n"
+		result += Apply(
+			"│",
+			borderColor,
+			ModeTrueColor,
+		) + " " + line + padding + " " + Apply(
+			"│",
+			borderColor,
+			ModeTrueColor,
+		) + "\n"
 	}
 
 	result += Apply("└"+strings.Repeat("─", maxWidth+2)+"┘", borderColor, ModeTrueColor)

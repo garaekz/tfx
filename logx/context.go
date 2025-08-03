@@ -4,11 +4,17 @@ import (
 	"context"
 	"fmt"
 	"maps"
-	"os"
 
 	"github.com/garaekz/tfx/color"
 	"github.com/garaekz/tfx/internal/share"
 )
+
+// Context represents a logging context with attached fields and a Go context.Context.
+type Context struct {
+	logger *Logger
+	fields map[string]any
+	ctx    context.Context
+}
 
 // WithField adds a single field to the context
 func (c *Context) WithField(key string, value any) *Context {
@@ -47,6 +53,9 @@ func (c *Context) WithContext(ctx context.Context) *Context {
 
 // WithError adds an error field to the context
 func (c *Context) WithError(err error) *Context {
+	if err == nil {
+		return c
+	}
 	return c.WithField("error", err.Error())
 }
 
@@ -97,9 +106,15 @@ func (c *Context) log(level share.Level, msg string) {
 	c.logger.mu.RUnlock()
 
 	for _, writer := range writers {
-		go func(w share.Writer) {
-			w.Write(entry)
-		}(writer)
+		if c.logger.options.Async {
+			c.logger.wg.Add(1)
+			go func(w share.Writer, e *share.Entry) {
+				defer c.logger.wg.Done()
+				w.Write(e)
+			}(writer, entry)
+		} else {
+			writer.Write(entry)
+		}
 	}
 }
 
@@ -126,7 +141,7 @@ func (c *Context) Error(msg string, args ...any) {
 
 func (c *Context) Fatal(msg string, args ...any) {
 	c.log(share.LevelFatal, fmt.Sprintf(msg, args...))
-	os.Exit(1)
+	osExit(1)
 }
 
 func (c *Context) Panic(msg string, args ...any) {
@@ -148,7 +163,7 @@ func (c *Context) FatalIf(err error, msg string, args ...any) {
 		errorFields["error"] = err.Error()
 
 		c.logger.log(share.LevelFatal, fmt.Sprintf("%s: %v", formattedMsg, err), errorFields)
-		os.Exit(1)
+		osExit(1)
 	}
 }
 
@@ -222,9 +237,15 @@ func (c *Context) Badge(tag, msg string, color color.Color, args ...any) {
 	c.logger.mu.RUnlock()
 
 	for _, writer := range writers {
-		go func(w share.Writer) {
-			w.Write(entry)
-		}(writer)
+		if c.logger.options.Async {
+			c.logger.wg.Add(1)
+			go func(w share.Writer, e *share.Entry) {
+				defer c.logger.wg.Done()
+				w.Write(e)
+			}(writer, entry)
+		} else {
+			writer.Write(entry)
+		}
 	}
 }
 

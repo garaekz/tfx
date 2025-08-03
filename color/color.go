@@ -87,10 +87,18 @@ func NewColor256(code int) Color {
 }
 
 // Backward compatibility - these will be deprecated
-func RGB(r, g, b uint8) Color     { return NewRGB(r, g, b) }   // Deprecated: use NewRGB
-func Hex(hex string) Color        { return NewHex(hex) }       // Deprecated: use NewHex
-func ANSIFunc(code int) Color     { return NewANSI(code) }     // Deprecated: use NewANSI (renamed to avoid conflict)
-func Color256Func(code int) Color { return NewColor256(code) } // Deprecated: use NewColor256 (renamed to avoid conflict)
+func RGB(r, g, b uint8) Color { return NewRGB(r, g, b) } // Deprecated: use NewRGB
+func Hex(hex string) Color    { return NewHex(hex) }     // Deprecated: use NewHex
+func ANSIFunc(
+	code int,
+) Color {
+	return NewANSI(code)
+} // Deprecated: use NewANSI (renamed to avoid conflict)
+func Color256Func(
+	code int,
+) Color {
+	return NewColor256(code)
+} // Deprecated: use NewColor256 (renamed to avoid conflict)
 
 // 2. INSTANTIATED: Config struct
 func NewColor(cfg ColorConfig, opts ...share.Option[ColorConfig]) Color {
@@ -272,7 +280,19 @@ func parseHexIntoConfig(cfg *ColorConfig) {
 	hex := strings.TrimPrefix(cfg.Hex, "#")
 	if len(hex) == 3 {
 		// Short hex format: #RGB -> #RRGGBB
-		hex = string(hex[0]) + string(hex[0]) + string(hex[1]) + string(hex[1]) + string(hex[2]) + string(hex[2])
+		hex = string(
+			hex[0],
+		) + string(
+			hex[0],
+		) + string(
+			hex[1],
+		) + string(
+			hex[1],
+		) + string(
+			hex[2],
+		) + string(
+			hex[2],
+		)
 	}
 	if len(hex) != 6 {
 		return // Invalid hex

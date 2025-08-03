@@ -224,7 +224,15 @@ func TestListPalettes(t *testing.T) {
 	}
 
 	// Check that all expected palettes are present
-	expectedPalettes := []string{"status", "material", "dracula", "nord", "tailwind", "github", "vscode"}
+	expectedPalettes := []string{
+		"status",
+		"material",
+		"dracula",
+		"nord",
+		"tailwind",
+		"github",
+		"vscode",
+	}
 	for _, expected := range expectedPalettes {
 		found := slices.Contains(names, expected)
 		if !found {

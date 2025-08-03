@@ -3,7 +3,9 @@
 package terminal
 
 import (
+	"context"
 	"os"
+	"os/signal"
 	"syscall"
 	"unsafe"
 )
@@ -40,4 +42,31 @@ func enableANSI() bool {
 	// Set the new mode
 	r, _, _ = syscall.SyscallN(procSetConsoleMode.Addr(), stdout, uintptr(mode))
 	return r != 0
+}
+
+// listenForSignals handles Windows signals (no SIGWINCH, only SIGINT/SIGTERM)
+func listenForSignals(ctx context.Context, handler *SignalHandler) {
+	stopCh := make(chan os.Signal, 1)
+
+	// Windows only supports SIGINT and SIGTERM, no SIGWINCH
+	signal.Notify(stopCh, syscall.SIGINT, syscall.SIGTERM)
+
+	defer signal.Stop(stopCh)
+
+	for {
+		select {
+		case <-ctx.Done():
+			if handler.onStop != nil {
+				handler.onStop()
+			}
+			return
+		case <-handler.stopCh:
+			return
+		case <-stopCh:
+			if handler.onStop != nil {
+				handler.onStop()
+			}
+			return
+		}
+	}
 }

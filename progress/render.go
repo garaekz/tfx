@@ -3,17 +3,15 @@ package progress
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/garaekz/tfx/color"
 	"github.com/garaekz/tfx/terminal"
 )
 
 // Enhanced progress bar rendering with effects and smart color detection
-func RenderBar(p *Progress) string {
+func RenderBar(p *Progress, detector *terminal.Detector) string {
 	percent := float64(p.current) / float64(p.total)
-
-	// Create terminal detector if not exists
-	detector := terminal.NewDetector(p.writer)
 
 	// Render label with theme color
 	labelColor := p.theme.RenderColor(p.theme.LabelColor, detector)
@@ -36,51 +34,12 @@ func RenderBar(p *Progress) string {
 	leftBorder := borderColor + "[" + color.Reset
 	rightBorder := borderColor + "]" + color.Reset
 
-	return fmt.Sprintf("\r%s %s%s%s %s", label, leftBorder, bar, rightBorder, percentText)
-}
+	// Construct the basic bar string
+	basicBar := fmt.Sprintf("\r%s %s%s%s %s", label, leftBorder, bar, rightBorder, percentText)
 
-// Enhanced spinner rendering with color themes
-func RenderSpinner(s *Spinner, frame string) string {
-	// Create terminal detector if not exists
-	detector := terminal.NewDetector(s.writer)
-
-	// Apply theme colors to spinner frame and message
-	frameColor := s.theme.RenderColor(s.theme.CompleteColor, detector)
-	labelColor := s.theme.RenderColor(s.theme.LabelColor, detector)
-
-	styledFrame := frameColor + frame + color.Reset
-	styledMessage := labelColor + s.message + color.Reset
-
-	return fmt.Sprintf("\r%s %s", styledFrame, styledMessage)
-}
-
-// Advanced rendering for completion messages
-func RenderCompletion(theme ProgressTheme, message string, success bool, detector *terminal.Detector) string {
-	var messageColor color.Color
-	var icon string
-
-	if success {
-		messageColor = theme.CompleteColor
-		icon = "✅"
-	} else {
-		messageColor = color.MaterialRed // Error color
-		icon = "❌"
-	}
-
-	coloredMessage := theme.RenderColor(messageColor, detector) + message + color.Reset
-	return fmt.Sprintf(" %s %s", icon, coloredMessage)
-}
-
-// Render progress with time estimation and rate
-func RenderAdvancedBar(p *Progress) string {
-	detector := terminal.NewDetector(p.writer)
-
-	// Basic bar rendering
-	basicBar := RenderBar(p)
-
-	// Add time estimation if progress is started
-	if p.started && p.current > 0 {
-		elapsed := p.GetElapsed()
+	// Add time estimation if enabled and progress is started
+	if p.ShowETA && p.isStarted && p.current > 0 {
+		elapsed := time.Since(p.startTime)
 		rate := float64(p.current) / elapsed.Seconds()
 
 		if rate > 0 {
@@ -98,13 +57,42 @@ func RenderAdvancedBar(p *Progress) string {
 	return basicBar
 }
 
-// Multi-line progress display for complex operations
-func RenderMultiProgress(bars []*Progress) string {
-	if len(bars) == 0 {
-		return ""
+// Enhanced spinner rendering with color themes
+func RenderSpinner(s *Spinner, frame string, detector *terminal.Detector) string {
+	// Apply theme colors to spinner frame and message
+	frameColor := s.theme.RenderColor(s.theme.CompleteColor, detector)
+	labelColor := s.theme.RenderColor(s.theme.LabelColor, detector)
+
+	styledFrame := frameColor + frame + color.Reset
+	styledMessage := labelColor + s.message + color.Reset
+
+	return fmt.Sprintf("\r%s %s", styledFrame, styledMessage)
+}
+
+// Advanced rendering for completion messages
+func RenderCompletion(
+	theme ProgressTheme,
+	message string,
+	success bool,
+	detector *terminal.Detector,
+) string {
+	var messageColor color.Color
+	var icon string
+
+	if success {
+		messageColor = theme.CompleteColor
+		icon = "✅"
+	} else {
+		messageColor = color.MaterialRed // Error color
+		icon = "❌"
 	}
 
-	detector := terminal.NewDetector(bars[0].writer)
+	coloredMessage := theme.RenderColor(messageColor, detector) + message + color.Reset
+	return fmt.Sprintf(" %s %s", icon, coloredMessage)
+}
+
+// Multi-line progress display for complex operations
+func RenderMultiProgress(bars []*Progress, detector *terminal.Detector) string {
 	result := ""
 
 	for i, bar := range bars {
@@ -116,7 +104,7 @@ func RenderMultiProgress(bars []*Progress) string {
 		numberColor := bar.theme.RenderColor(bar.theme.BorderColor, detector)
 		number := numberColor + fmt.Sprintf("%d. ", i+1) + color.Reset
 
-		barRender := RenderBar(bar)
+		barRender := RenderBar(bar, detector)
 		// Remove the \r from individual bars in multi-progress
 		barRender = barRender[1:] // Remove leading \r
 
@@ -127,10 +115,8 @@ func RenderMultiProgress(bars []*Progress) string {
 }
 
 // ASCII art style rendering for special occasions
-func RenderASCIIBar(p *Progress, style ASCIIStyle) string {
+func RenderASCIIBar(p *Progress, style ASCIIStyle, detector *terminal.Detector) string {
 	percent := float64(p.current) / float64(p.total)
-	detector := terminal.NewDetector(p.writer)
-
 	var bar string
 	filled := int(percent * float64(p.width))
 
@@ -187,7 +173,7 @@ const (
 )
 
 // Render with dynamic width based on terminal size
-func RenderResponsiveBar(p *Progress, maxWidth int) string {
+func RenderResponsiveBar(p *Progress, maxWidth int, detector *terminal.Detector) string {
 	// Adjust bar width based on available space
 	labelLen := len(p.label)
 	percentLen := 5 // " 100%"
@@ -205,7 +191,7 @@ func RenderResponsiveBar(p *Progress, maxWidth int) string {
 	originalWidth := p.width
 	p.width = availableWidth
 
-	result := RenderBar(p)
+	result := RenderBar(p, detector)
 
 	// Restore original width
 	p.width = originalWidth

@@ -60,7 +60,13 @@ func TestThemeEffectSettings(t *testing.T) {
 	}
 
 	// Themes that should not have effects enabled
-	effectDisabledThemes := []ProgressTheme{MaterialTheme, NordTheme, GitHubTheme, TailwindTheme, VSCodeTheme}
+	effectDisabledThemes := []ProgressTheme{
+		MaterialTheme,
+		NordTheme,
+		GitHubTheme,
+		TailwindTheme,
+		VSCodeTheme,
+	}
 
 	for _, theme := range effectDisabledThemes {
 		if theme.EffectEnabled {
@@ -73,7 +79,11 @@ func TestAllProgressThemes(t *testing.T) {
 	expectedCount := 8 // Material, Dracula, Nord, GitHub, Tailwind, VSCode, Rainbow, Neon
 
 	if len(AllProgressThemes) != expectedCount {
-		t.Errorf("expected %d themes in AllProgressThemes, got %d", expectedCount, len(AllProgressThemes))
+		t.Errorf(
+			"expected %d themes in AllProgressThemes, got %d",
+			expectedCount,
+			len(AllProgressThemes),
+		)
 	}
 
 	// Check that all themes are present
@@ -82,7 +92,16 @@ func TestAllProgressThemes(t *testing.T) {
 		themeNames[theme.Name] = true
 	}
 
-	expectedNames := []string{"material", "dracula", "nord", "github", "tailwind", "vscode", "rainbow", "neon"}
+	expectedNames := []string{
+		"material",
+		"dracula",
+		"nord",
+		"github",
+		"tailwind",
+		"vscode",
+		"rainbow",
+		"neon",
+	}
 	for _, name := range expectedNames {
 		if !themeNames[name] {
 			t.Errorf("expected theme '%s' in AllProgressThemes", name)

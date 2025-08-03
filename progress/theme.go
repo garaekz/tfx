@@ -170,7 +170,12 @@ const (
 )
 
 // Enhanced progress rendering with effects
-func (pt ProgressTheme) RenderProgress(percent float64, width int, effect ProgressEffect, detector *terminal.Detector) string {
+func (pt ProgressTheme) RenderProgress(
+	percent float64,
+	width int,
+	effect ProgressEffect,
+	detector *terminal.Detector,
+) string {
 	filled := int(percent * float64(width))
 
 	switch effect {
@@ -202,7 +207,10 @@ func (pt ProgressTheme) renderSolidProgress(filled, width int, detector *termina
 }
 
 // Rainbow progress effect
-func (pt ProgressTheme) renderRainbowProgress(filled, width int, detector *terminal.Detector) string {
+func (pt ProgressTheme) renderRainbowProgress(
+	filled, width int,
+	detector *terminal.Detector,
+) string {
 	rainbowColors := []color.Color{
 		color.MaterialRed,
 		color.MaterialOrange,
@@ -228,7 +236,10 @@ func (pt ProgressTheme) renderRainbowProgress(filled, width int, detector *termi
 }
 
 // Gradient progress effect
-func (pt ProgressTheme) renderGradientProgress(filled, width int, detector *terminal.Detector) string {
+func (pt ProgressTheme) renderGradientProgress(
+	filled, width int,
+	detector *terminal.Detector,
+) string {
 	startColor := pt.CompleteColor
 	endColor := color.MaterialCyan // Could be configurable
 	incompleteColor := pt.RenderColor(pt.IncompleteColor, detector)

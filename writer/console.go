@@ -51,6 +51,15 @@ func NewConsoleWriter(output io.Writer, opts ConsoleOptions) *ConsoleWriter {
 	}
 }
 
+func (w *ConsoleWriter) UpdateOptions(output io.Writer, opts ConsoleOptions) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.output = output
+	w.options = opts
+	w.badgeWidth = opts.BadgeWidth
+	w.detector = terminal.NewDetector(output)
+}
+
 // Write writes a log entry to console
 func (w *ConsoleWriter) Write(entry *share.Entry) error {
 	if entry.Level < share.Level(w.options.Level) {
@@ -80,13 +89,20 @@ func (w *ConsoleWriter) Write(entry *share.Entry) error {
 func (w *ConsoleWriter) formatBadge(entry *share.Entry) string {
 	var parts []string
 
+	// Indentation
+	if entry.IndentStr != "" {
+		parts = append(parts, entry.IndentStr)
+	}
+
 	// Timestamp with universal [HH:MM:SS] styling
 	if w.options.Timestamp {
 		ts := entry.Timestamp.Format(w.options.TimeFormat)
-		if w.supportsColor() {
+		if w.supportsColor() && !w.options.DisableColor {
 			ts = color.Style(ts, color.ModernGray)
+			parts = append(parts, fmt.Sprintf("⏰ [%s] ", ts))
+		} else {
+			parts = append(parts, fmt.Sprintf("[%s] ", ts))
 		}
-		parts = append(parts, fmt.Sprintf("⏰ [%s] ", ts))
 	}
 
 	// Badge/Level - this is already padded for consistent width
@@ -96,7 +112,7 @@ func (w *ConsoleWriter) formatBadge(entry *share.Entry) string {
 	// Caller info; dim on debug level
 	if w.options.ShowCaller && entry.Caller != nil {
 		raw := fmt.Sprintf("%s:%d", w.shortFilename(entry.Caller.File), entry.Caller.Line)
-		if w.supportsColor() {
+		if w.supportsColor() && !w.options.DisableColor {
 			cfg := color.StyleConfig{
 				Text: raw,
 				// lighter slate for visibility; always undimmed
@@ -111,7 +127,7 @@ func (w *ConsoleWriter) formatBadge(entry *share.Entry) string {
 
 	// Message with proper spacing
 	message := entry.Message
-	if w.supportsColor() {
+	if w.supportsColor() && !w.options.DisableColor {
 		message = w.colorizeMessage(entry, message)
 	}
 	// separate badge and message with tab for consistency
@@ -156,7 +172,7 @@ func (w *ConsoleWriter) formatBadgeTag(entry *share.Entry) string {
 
 	// Emoji prefix for level
 	emoji := ""
-	if w.supportsColor() {
+	if w.supportsColor() && !w.options.DisableColor {
 		switch entry.Level {
 		case share.LevelSuccess:
 			emoji = "✅"
@@ -178,7 +194,7 @@ func (w *ConsoleWriter) formatBadgeTag(entry *share.Entry) string {
 	}
 
 	// Multi-part badge: gray background and accent color for second word
-	if w.supportsColor() && strings.Contains(tag, " ") {
+	if w.supportsColor() && !w.options.DisableColor && strings.Contains(tag, " ") {
 		parts := strings.SplitN(tag, " ", 2)
 		main := parts[0]
 		accent := parts[1]
@@ -205,13 +221,13 @@ func (w *ConsoleWriter) formatBadgeTag(entry *share.Entry) string {
 	}
 
 	// Single badge with fixed width padding
-	if w.supportsColor() {
+	if w.supportsColor() && !w.options.DisableColor {
 		// Modern badge style
 		var fgColor color.Color
-		switch {
-		case tagColor == color.ModernYellow || tagColor == color.ModernCyan:
+		switch tagColor {
+		case color.ModernYellow, color.ModernCyan:
 			fgColor = color.ModernSlate
-		case tagColor == color.ModernGray || tagColor == color.ModernSlate:
+		case color.ModernGray, color.ModernSlate:
 			fgColor = color.ColorWhite
 		default:
 			fgColor = color.ColorWhite
@@ -232,7 +248,39 @@ func (w *ConsoleWriter) formatBadgeTag(entry *share.Entry) string {
 	return emoji + " " + tag + " "
 }
 
-// applyBadgeStyle applies the badge style
+// colorizeMessage applies color to the message based on level
+func (w *ConsoleWriter) colorizeMessage(entry *share.Entry, message string) string {
+	if w.options.DisableColor {
+		return message
+	}
+	var fg color.Color
+	if msgType, ok := entry.Fields["type"].(string); ok && msgType == "success" {
+		fg = color.ModernGreen
+	} else {
+		switch entry.Level {
+		case share.LevelSuccess:
+			fg = color.ModernGreen
+		case share.LevelError, share.LevelFatal, share.LevelPanic:
+			fg = color.ModernRed
+		case share.LevelWarn:
+			fg = color.ModernOrange
+		case share.LevelDebug:
+			fg = color.ModernPurple
+		case share.LevelTrace:
+			fg = color.ModernSlate
+		case share.LevelInfo:
+			fg = color.ModernBlue
+		default:
+			fg = color.ModernSlate
+		}
+	}
+	style := color.StyleConfig{
+		Text:       message,
+		ForeGround: fg,
+		Mode:       w.GetColorMode(),
+	}
+	return color.NewStyle(style)
+}
 
 // getLevelTag returns the tag for a level
 func (w *ConsoleWriter) getLevelTag(level share.Level) string {
@@ -282,37 +330,6 @@ func (w *ConsoleWriter) getLevelColor(level share.Level) color.Color {
 	}
 }
 
-// colorizeMessage applies color to the message based on level
-func (w *ConsoleWriter) colorizeMessage(entry *share.Entry, message string) string {
-	var fg color.Color
-	if msgType, ok := entry.Fields["type"].(string); ok && msgType == "success" {
-		fg = color.ModernGreen
-	} else {
-		switch entry.Level {
-		case share.LevelSuccess:
-			fg = color.ModernGreen
-		case share.LevelError, share.LevelFatal, share.LevelPanic:
-			fg = color.ModernRed
-		case share.LevelWarn:
-			fg = color.ModernOrange
-		case share.LevelDebug:
-			fg = color.ModernPurple
-		case share.LevelTrace:
-			fg = color.ModernSlate
-		case share.LevelInfo:
-			fg = color.ModernBlue
-		default:
-			fg = color.ModernSlate
-		}
-	}
-	style := color.StyleConfig{
-		Text:       message,
-		ForeGround: fg,
-		Mode:       w.GetColorMode(),
-	}
-	return color.NewStyle(style)
-}
-
 // formatFields formats the fields for display
 func (w *ConsoleWriter) formatFields(fields share.Fields) string {
 	if len(fields) == 0 {
@@ -328,9 +345,13 @@ func (w *ConsoleWriter) formatFields(fields share.Fields) string {
 		// key in gray and value in slate for contrast
 		keyStr := key
 		valRaw := fmt.Sprintf("%v", value)
-		if w.supportsColor() {
+		if w.supportsColor() && !w.options.DisableColor {
 			// muted slate for key, keep value normal
-			cfg := color.StyleConfig{Text: key, ForeGround: color.ModernSlate, Mode: w.GetColorMode()}
+			cfg := color.StyleConfig{
+				Text:       key,
+				ForeGround: color.ModernSlate,
+				Mode:       w.GetColorMode(),
+			}
 			keyStr = color.NewStyle(cfg)
 		}
 		parts = append(parts, fmt.Sprintf("%s=%s", keyStr, valRaw))
@@ -372,8 +393,10 @@ func (w *ConsoleWriter) formatText(entry *share.Entry) string {
 	var parts []string
 
 	// Timestamp
-	timestamp := entry.Timestamp.Format("2006-01-02 15:04:05")
-	parts = append(parts, timestamp)
+	if w.options.Timestamp {
+		timestamp := entry.Timestamp.Format("2006-01-02 15:04:05")
+		parts = append(parts, timestamp)
+	}
 
 	// Level
 	parts = append(parts, entry.Level.String())
@@ -410,6 +433,9 @@ func (w *ConsoleWriter) supportsColor() bool {
 }
 
 func (w *ConsoleWriter) GetColorMode() color.Mode {
+	if w.options.ForceColor {
+		return color.ModeTrueColor
+	}
 	if !w.supportsColor() {
 		return color.ModeNoColor
 	}

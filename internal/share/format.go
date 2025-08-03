@@ -14,14 +14,3 @@ const (
 type Formatter interface {
 	Format(entry *Entry) ([]byte, error)
 }
-
-// BadgeStyle represents different badge appearances
-type BadgeStyle int
-
-const (
-	BadgeStyleSquare BadgeStyle = iota
-	BadgeStyleRound
-	BadgeStyleArrow
-	BadgeStyleDot
-	BadgeStyleCustom
-)

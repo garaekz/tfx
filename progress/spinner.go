@@ -1,6 +1,7 @@
 package progress
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -9,10 +10,11 @@ import (
 
 	"github.com/garaekz/tfx/color"
 	"github.com/garaekz/tfx/internal/share"
+	"github.com/garaekz/tfx/runfx"
 	"github.com/garaekz/tfx/terminal"
 )
 
-// Spinner renders an animated spinner with an optional message.
+// Spinner renders an animated spinner with an optional message and implements runfx.Visual.
 type Spinner struct {
 	frames   []string
 	interval time.Duration
@@ -22,8 +24,17 @@ type Spinner struct {
 	writer   io.Writer
 	detector *terminal.Detector
 	mu       sync.Mutex
-	active   bool
-	stopCh   chan struct{}
+
+	// RunFX integration
+	loop       runfx.Loop
+	unmount    func()
+	isActive   bool
+	frameIndex int
+	startTime  time.Time
+
+	// Legacy fields for compatibility
+	stopCh chan struct{}
+	active bool // alias for isActive
 }
 
 // SpinnerConfig provides structured configuration for Spinner
@@ -46,30 +57,10 @@ const (
 	SpinnerEffectGlow
 )
 
-// DefaultSpinnerConfig returns default configuration for Spinner
-func DefaultSpinnerConfig() SpinnerConfig {
-	return SpinnerConfig{
-		Message:  "",
-		Frames:   []string{"|", "/", "-", "\\"},
-		Interval: 100 * time.Millisecond,
-		Theme:    MaterialTheme,
-		Effect:   SpinnerEffectNone,
-		Writer:   os.Stdout,
-	}
-}
-
-// --- MULTIPATH API: Three Entry Points ---
-
-// 1. EXPRESS: Quick default
-func StartSpinner(message string) *Spinner {
-	return NewSpinner(DefaultSpinnerConfig(), WithMessage(message))
-}
+// --- INTERNAL IMPLEMENTATION ---
 
 // 2. INSTANTIATED: Config struct
-func NewSpinner(cfg SpinnerConfig, opts ...share.Option[SpinnerConfig]) *Spinner {
-	// Apply functional options to config
-	share.ApplyOptions(&cfg, opts...)
-
+func NewSpinnerWithConfig(cfg SpinnerConfig) *Spinner {
 	// Ensure defaults are set
 	if len(cfg.Frames) == 0 {
 		cfg.Frames = []string{"|", "/", "-", "\\"}
@@ -94,96 +85,12 @@ func NewSpinner(cfg SpinnerConfig, opts ...share.Option[SpinnerConfig]) *Spinner
 	// Create terminal detector
 	s.detector = terminal.NewDetector(s.writer)
 
+	// Setup resize handling with signal handler
+	signalHandler := terminal.NewSignalHandler()
+	signalHandler.OnResize(s.Redraw)
+	// Note: signalHandler.Start() would need to be called to actually listen
+
 	return s
-}
-
-// 3. FLUENT: Functional options + DSL chaining support
-func NewSpinnerWith(opts ...share.Option[SpinnerConfig]) *Spinner {
-	cfg := DefaultSpinnerConfig()
-	return NewSpinner(cfg, opts...)
-}
-
-// --- FUNCTIONAL OPTIONS ---
-
-// WithMessage sets the spinner message
-func WithMessage(message string) share.Option[SpinnerConfig] {
-	return func(cfg *SpinnerConfig) {
-		cfg.Message = message
-	}
-}
-
-// WithSpinnerFrames sets custom frames for the spinner animation
-func WithSpinnerFrames(frames []string) share.Option[SpinnerConfig] {
-	return func(cfg *SpinnerConfig) {
-		cfg.Frames = frames
-	}
-}
-
-// WithSpinnerInterval sets the frame interval duration
-func WithSpinnerInterval(interval time.Duration) share.Option[SpinnerConfig] {
-	return func(cfg *SpinnerConfig) {
-		cfg.Interval = interval
-	}
-}
-
-// WithSpinnerTheme applies a ProgressTheme to colorize the spinner
-func WithSpinnerTheme(theme ProgressTheme) share.Option[SpinnerConfig] {
-	return func(cfg *SpinnerConfig) {
-		cfg.Theme = theme
-	}
-}
-
-// WithSpinnerEffect applies visual effects
-func WithSpinnerEffect(effect SpinnerEffect) share.Option[SpinnerConfig] {
-	return func(cfg *SpinnerConfig) {
-		cfg.Effect = effect
-	}
-}
-
-// WithSpinnerWriter sets a custom writer for spinner output
-func WithSpinnerWriter(writer io.Writer) share.Option[SpinnerConfig] {
-	return func(cfg *SpinnerConfig) {
-		cfg.Writer = writer
-	}
-}
-
-// --- CONVENIENCE OPTIONS ---
-
-// WithSpinnerMaterialTheme applies Material Design theme
-func WithSpinnerMaterialTheme() share.Option[SpinnerConfig] {
-	return WithSpinnerTheme(MaterialTheme)
-}
-
-// WithSpinnerDraculaTheme applies Dracula theme
-func WithSpinnerDraculaTheme() share.Option[SpinnerConfig] {
-	return WithSpinnerTheme(DraculaTheme)
-}
-
-// WithSpinnerNordTheme applies Nord theme
-func WithSpinnerNordTheme() share.Option[SpinnerConfig] {
-	return WithSpinnerTheme(NordTheme)
-}
-
-// WithSpinnerRainbow enables rainbow effect
-func WithSpinnerRainbow() share.Option[SpinnerConfig] {
-	return WithSpinnerEffect(SpinnerEffectRainbow)
-}
-
-// --- PRESET FRAMES ---
-
-// WithDotsFrames uses dots animation
-func WithDotsFrames() share.Option[SpinnerConfig] {
-	return WithSpinnerFrames([]string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"})
-}
-
-// WithArrowFrames uses arrow animation
-func WithArrowFrames() share.Option[SpinnerConfig] {
-	return WithSpinnerFrames([]string{"←", "↖", "↑", "↗", "→", "↘", "↓", "↙"})
-}
-
-// WithBounceFrames uses bouncing animation
-func WithBounceFrames() share.Option[SpinnerConfig] {
-	return WithSpinnerFrames([]string{"⠁", "⠂", "⠄", "⠂"})
 }
 
 // --- SPINNER METHODS ---
@@ -191,26 +98,55 @@ func WithBounceFrames() share.Option[SpinnerConfig] {
 // Start begins the spinner in a new goroutine
 func (s *Spinner) Start() {
 	s.mu.Lock()
-	if s.active {
+	if s.isActive {
 		s.mu.Unlock()
 		return
 	}
-	s.active = true
+	s.isActive = true
+	s.startTime = time.Now()
 	s.mu.Unlock()
 
-	go s.spin()
+	// Create RunFX loop with custom writer and mount this spinner
+	cfg := runfx.Config{
+		Output: s.writer,
+	}
+	s.loop = runfx.Start(cfg)
+	var err error
+	s.unmount, err = s.loop.Mount(s)
+	if err != nil {
+		// Fallback to direct rendering if RunFX fails
+		go s.spin()
+		return
+	}
+
+	// Start the RunFX loop in background
+	go func() {
+		ctx := context.Background()
+		s.loop.Run(ctx)
+	}()
 }
 
 // Stop stops the spinner and prints a success message
 func (s *Spinner) Stop(msg string) {
 	s.mu.Lock()
-	if !s.active {
+	if !s.isActive {
 		s.mu.Unlock()
 		return
 	}
-	s.active = false
-	s.stopCh <- struct{}{}
+	s.isActive = false
+	s.active = false // Keep legacy field updated
+	if s.stopCh != nil {
+		select {
+		case s.stopCh <- struct{}{}:
+		default:
+		}
+	}
 	s.mu.Unlock()
+
+	// Unmount from RunFX if mounted
+	if s.unmount != nil {
+		s.unmount()
+	}
 
 	// Clear line completely and print completion message
 	fmt.Fprint(s.writer, "\r\033[K") // Clear entire line
@@ -221,13 +157,24 @@ func (s *Spinner) Stop(msg string) {
 // Fail stops the spinner and prints a failure message
 func (s *Spinner) Fail(msg string) {
 	s.mu.Lock()
-	if !s.active {
+	if !s.isActive {
 		s.mu.Unlock()
 		return
 	}
-	s.active = false
-	s.stopCh <- struct{}{}
+	s.isActive = false
+	s.active = false // Keep legacy field updated
+	if s.stopCh != nil {
+		select {
+		case s.stopCh <- struct{}{}:
+		default:
+		}
+	}
 	s.mu.Unlock()
+
+	// Unmount from RunFX if mounted
+	if s.unmount != nil {
+		s.unmount()
+	}
 
 	// Clear line completely and print failure message
 	fmt.Fprint(s.writer, "\r\033[K") // Clear entire line
@@ -254,6 +201,70 @@ func (s *Spinner) SetTheme(theme ProgressTheme) {
 	s.mu.Unlock()
 }
 
+// Redraw redraws the spinner.
+func (s *Spinner) Redraw() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.isActive {
+		// This is a simplified redraw. A more robust implementation would
+		// clear the line and re-render the current frame.
+		fmt.Fprint(s.writer, "\r")
+	}
+}
+
+// Close stops the spinner and unmounts from RunFX
+func (s *Spinner) Close() {
+	if s.unmount != nil {
+		s.unmount()
+	}
+}
+
+// --- runfx.Visual INTERFACE IMPLEMENTATION ---
+
+// Render displays the current spinner frame to the provided writer
+func (s *Spinner) Render(writer share.Writer) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if !s.isActive {
+		return
+	}
+
+	// Safety check for empty frames
+	if len(s.frames) == 0 {
+		return
+	}
+
+	frame := s.frames[s.frameIndex%len(s.frames)]
+
+	// Apply effects if enabled
+	if s.effect == SpinnerEffectRainbow {
+		frame = s.applyRainbowEffect(frame, s.frameIndex)
+	}
+
+	// Render spinner with theme
+	text := s.renderFrame(frame)
+	entry := &share.Entry{
+		Message: text,
+	}
+	writer.Write(entry)
+}
+
+// Tick updates the spinner frame index based on the interval
+func (s *Spinner) Tick(timestamp time.Time) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Increment frame index
+	s.frameIndex = (s.frameIndex + 1) % len(s.frames)
+}
+
+// OnResize handles terminal resize events
+func (s *Spinner) OnResize(width, height int) {
+	// For spinner, we don't need special resize handling
+	// The spinner is typically just one line and self-contained
+}
+
 // --- INTERNAL METHODS ---
 
 // spin runs the spinner animation loop
@@ -265,7 +276,7 @@ func (s *Spinner) spin() {
 			return
 		default:
 			s.mu.Lock()
-			if !s.active {
+			if !s.isActive {
 				s.mu.Unlock()
 				return
 			}
@@ -321,13 +332,15 @@ func (s *Spinner) applyRainbowEffect(frame string, iteration int) string {
 
 // --- GLOBAL CONVENIENCE FUNCTIONS ---
 
-var globalSpinner *Spinner
-var globalSpinnerMu sync.Mutex
+var (
+	globalSpinner   *Spinner
+	globalSpinnerMu sync.Mutex
+)
 
 // StartGlobalSpinner starts a global spinner (EXPRESS API)
 func StartGlobalSpinner(message string) {
 	globalSpinnerMu.Lock()
-	if globalSpinner != nil && globalSpinner.active {
+	if globalSpinner != nil && globalSpinner.isActive {
 		globalSpinnerMu.Unlock()
 		return
 	}
@@ -358,33 +371,33 @@ func FailGlobalSpinner(msg string) {
 
 // NewMaterialSpinner creates a spinner with Material Design theme
 func NewMaterialSpinner(message string) *Spinner {
-	return NewSpinnerWith(
-		WithMessage(message),
-		WithSpinnerMaterialTheme(),
-	)
+	return NewSpinnerWithConfig(SpinnerConfig{
+		Message: message,
+		Theme:   MaterialTheme,
+	})
 }
 
 // NewDraculaSpinner creates a spinner with Dracula theme and rainbow effect
 func NewDraculaSpinner(message string) *Spinner {
-	return NewSpinnerWith(
-		WithMessage(message),
-		WithSpinnerDraculaTheme(),
-		WithSpinnerRainbow(),
-	)
+	return NewSpinnerWithConfig(SpinnerConfig{
+		Message: message,
+		Theme:   DraculaTheme,
+		Effect:  SpinnerEffectRainbow,
+	})
 }
 
 // NewNordSpinner creates a spinner with Nord theme
 func NewNordSpinner(message string) *Spinner {
-	return NewSpinnerWith(
-		WithMessage(message),
-		WithSpinnerNordTheme(),
-	)
+	return NewSpinnerWithConfig(SpinnerConfig{
+		Message: message,
+		Theme:   NordTheme,
+	})
 }
 
 // NewDotsSpinner creates a spinner with dots animation
 func NewDotsSpinner(message string) *Spinner {
-	return NewSpinnerWith(
-		WithMessage(message),
-		WithDotsFrames(),
-	)
+	return NewSpinnerWithConfig(SpinnerConfig{
+		Message: message,
+		Frames:  []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"},
+	})
 }

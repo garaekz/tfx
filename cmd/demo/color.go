@@ -141,11 +141,17 @@ func runColorDemo() {
 
 	// 11. Gradient text
 	gradientColors := []color.Color{color.MaterialRed, color.MaterialOrange, color.MaterialYellow}
-	fmt.Printf("   Gradient: %s\n", color.GradientText("GRADIENT TEXT", gradientColors, color.ModeTrueColor))
+	fmt.Printf(
+		"   Gradient: %s\n",
+		color.GradientText("GRADIENT TEXT", gradientColors, color.ModeTrueColor),
+	)
 
 	// 12. Progress bar
 	fmt.Println("\n11. PROGRESS BAR:")
-	fmt.Printf("   Progress: %s\n", color.ProgressBar(7, 10, 20, color.MaterialGreen, color.ColorBrightBlack))
+	fmt.Printf(
+		"   Progress: %s\n",
+		color.ProgressBar(7, 10, 20, color.MaterialGreen, color.ColorBrightBlack),
+	)
 
 	// 13. Bordered text
 	fmt.Println("\n12. BORDERED TEXT:")

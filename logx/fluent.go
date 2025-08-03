@@ -69,13 +69,16 @@ type FluentLogger struct {
 	level  share.Level
 	fields share.Fields
 	error  error
-	msg    string
+	noOp   bool // Add this field
 }
 
 // If creates a new fluent logger for conditional logging
 func If(err error) *FluentLogger {
+	if err == nil {
+		return &FluentLogger{noOp: true, fields: make(share.Fields)} // Return a no-op logger
+	}
 	return &FluentLogger{
-		logger: GetLogger(),
+		logger: Log(),
 		error:  err,
 		fields: make(share.Fields),
 	}
@@ -154,7 +157,7 @@ func (f *FluentLogger) WithError(err error) *FluentLogger {
 
 // Msg logs the message with the configured level and fields
 func (f *FluentLogger) Msg(msg string, args ...any) bool {
-	if f.error == nil {
+	if f.noOp || f.error == nil {
 		return false
 	}
 
@@ -206,7 +209,7 @@ const (
 
 // ModernBadge creates a modern styled badge log entry
 func ModernBadge(tag string, msg string, opts ...BadgeOption) {
-	GetLogger().ModernBadge(tag, msg, opts...)
+	Log().ModernBadge(tag, msg, opts...)
 }
 
 // ModernBadge creates a modern styled badge for the logger
@@ -392,10 +395,25 @@ func ConfigBadge(msg string) {
 func SecurityBadge(msg string, level share.Level) {
 	switch level {
 	case share.LevelError, share.LevelFatal:
-		ErrorBadge("SEC", msg)
+		Log().ModernBadge("SEC", msg,
+			WithBadgeColor(White),
+			WithBadgeBackground(MaterialRed),
+			WithBadgeLevel(share.LevelError),
+			WithBold(),
+		)
 	case share.LevelWarn:
-		WarnBadge("SEC", msg)
+		Log().ModernBadge("SEC", msg,
+			WithBadgeColor(Black),
+			WithBadgeBackground(MaterialYellow),
+			WithBadgeLevel(share.LevelWarn),
+			WithBold(),
+		)
 	default:
-		InfoBadge("SEC", msg)
+		Log().ModernBadge("SEC", msg,
+			WithBadgeColor(White),
+			WithBadgeBackground(MaterialBlue),
+			WithBadgeLevel(share.LevelInfo),
+			WithBold(),
+		)
 	}
 }

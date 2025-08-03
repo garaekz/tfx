@@ -1,33 +1,31 @@
 // Package progress provides beautiful progress bars and spinners with multipath API support.
 //
-// This package enforces TermFX multipath pattern (see MULTIPATH.md):
-//   - EXPRESS: Start(args...)             // default, config struct, functional options
-//   - CONFIG:  StartWith(cfg ProgressConfig) // typed config entry for IDE autocompletion
-//   - FLUENT:  Start(opts...)
+// This package follows TFX multipath pattern (see MULTIPATH.md):
+//   - BEGINNER: Start() / Start(config)    // Zero-config or config struct
+//   - HARDCORE: New().Method().Method()    // DSL builder pattern
+//   - EXPERIMENTAL: StartWith(opts...)     // Functional options (not in use)
 //
-// Object lifecycle uses typed constructors:
-//   - New()                                 // default instance
-//   - NewWithConfig(cfg ProgressConfig)     // explicit config instance
+// Progress bars are powered by RunFX for robust terminal management.
 package progress
 
 import (
+	"context"
 	"fmt"
 	"io"
-	"os"
 	"sync"
 	"time"
 
 	"github.com/garaekz/tfx/internal/share"
+	"github.com/garaekz/tfx/runfx"
 	"github.com/garaekz/tfx/terminal"
 )
 
-// Progress tracks and displays progress of operations.
+// Progress tracks and displays progress of operations and implements runfx.Visual.
 type Progress struct {
 	total     int
 	current   int
 	label     string
 	width     int
-	started   bool
 	startTime time.Time
 	theme     ProgressTheme
 	style     ProgressStyle
@@ -35,87 +33,31 @@ type Progress struct {
 	writer    io.Writer
 	detector  *terminal.Detector
 	mu        sync.Mutex
+	ShowETA   bool
+
+	// RunFX integration
+	loop      runfx.Loop
+	unmount   func()
+	isStarted bool
 }
 
 // ProgressConfig provides structured configuration for Progress.
 type ProgressConfig struct {
-	Total  int
-	Label  string
-	Width  int
-	Theme  ProgressTheme
-	Style  ProgressStyle
-	Effect ProgressEffect
-	Writer io.Writer
+	Total   int
+	Label   string
+	Width   int
+	Theme   ProgressTheme
+	Style   ProgressStyle
+	Effect  ProgressEffect
+	Writer  io.Writer
+	ShowETA bool
 }
 
-// DefaultProgressConfig returns default config for Progress.
-func DefaultProgressConfig() ProgressConfig {
-	return ProgressConfig{
-		Total:  100,
-		Label:  "Progress",
-		Width:  40,
-		Theme:  MaterialTheme,
-		Style:  ProgressStyleBar,
-		Effect: EffectNone,
-		Writer: os.Stdout,
-	}
-}
+// --- INTERNAL IMPLEMENTATION ---
 
-// Start creates and starts a progress bar (EXPRESS API).
-// Supports multipath: Start(), Start(cfg), Start(opts...).
-func Start(args ...any) *Progress {
-	p := newProgress(args...)
-	p.Start()
-	return p
-}
-
-// StartWith creates and starts a progress bar with explicit config (IDE SUPPORT API).
-func StartWith(cfg ProgressConfig) *Progress {
-	return Start(cfg)
-}
-
-// New creates a new Progress instance with defaults (OBJECT API).
-func New() *Progress {
-	return newProgress()
-}
-
-// NewWithConfig creates a new Progress instance with explicit config (OBJECT API).
-func NewWithConfig(cfg ProgressConfig) *Progress {
-	return newProgress(cfg)
-}
-
-// newProgress is the internal implementation supporting multipath overload using OverloadWithOptions.
-func newProgress(args ...any) *Progress {
-	// Separate functional options from other args
-	var opts []share.Option[ProgressConfig]
-	var cfgArgs []any
-	for _, arg := range args {
-		switch v := arg.(type) {
-		case share.Option[ProgressConfig]:
-			opts = append(opts, v)
-		default:
-			cfgArgs = append(cfgArgs, v)
-		}
-	}
-
-	// Merge config and options
-	cfg := share.OverloadWithOptions(cfgArgs, DefaultProgressConfig(), opts...)
-
-	// Ensure defaults for zero values
-	if cfg.Writer == nil {
-		cfg.Writer = os.Stdout
-	}
-	if cfg.Total == 0 {
-		cfg.Total = 100
-	}
-	if cfg.Label == "" {
-		cfg.Label = "Progress"
-	}
-	if cfg.Width == 0 {
-		cfg.Width = 40
-	}
-
-	p := &Progress{
+// newProgress is the internal implementation.
+func newProgress(cfg ProgressConfig) *Progress {
+	return &Progress{
 		total:    cfg.Total,
 		label:    cfg.Label,
 		width:    cfg.Width,
@@ -124,313 +66,311 @@ func newProgress(args ...any) *Progress {
 		effect:   cfg.Effect,
 		writer:   cfg.Writer,
 		detector: terminal.NewDetector(cfg.Writer),
-	}
-	return p
-}
-
-// --- FUNCTIONAL OPTIONS ---
-
-// WithTotal sets the total value for progress tracking
-func WithTotal(total int) share.Option[ProgressConfig] {
-	return func(cfg *ProgressConfig) {
-		cfg.Total = total
+		ShowETA:  cfg.ShowETA,
 	}
 }
 
-// WithLabel sets the progress label
-func WithLabel(label string) share.Option[ProgressConfig] {
-	return func(cfg *ProgressConfig) {
-		cfg.Label = label
+// --- RUNFX VISUAL INTERFACE ---
+
+// Render implements runfx.Visual interface
+func (p *Progress) Render(w share.Writer) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if !p.isStarted {
+		return
 	}
-}
 
-// WithProgressWidth sets the width of the progress bar
-func WithProgressWidth(width int) share.Option[ProgressConfig] {
-	return func(cfg *ProgressConfig) {
-		cfg.Width = width
+	rendered := p.renderProgress()
+	entry := &share.Entry{
+		Message: rendered,
 	}
+	w.Write(entry)
 }
 
-// WithProgressTheme applies a ProgressTheme
-func WithProgressTheme(theme ProgressTheme) share.Option[ProgressConfig] {
-	return func(cfg *ProgressConfig) {
-		cfg.Theme = theme
+// Tick implements runfx.Visual interface
+func (p *Progress) Tick(now time.Time) {
+	// Progress bars typically don't need tick updates unless they have animations
+	// This could be used for effects like pulsing or color cycling
+}
+
+// OnResize implements runfx.Visual interface
+func (p *Progress) OnResize(cols, rows int) {
+	// Adjust progress bar width based on terminal size if needed
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	// Could adjust width to fit terminal
+	if cols > 0 && cols < p.width+20 { // Leave some margin
+		p.width = cols - 20
+		if p.width < 10 {
+			p.width = 10
+		}
 	}
-}
-
-// WithProgressStyle applies a ProgressStyle
-func WithProgressStyle(style ProgressStyle) share.Option[ProgressConfig] {
-	return func(cfg *ProgressConfig) {
-		cfg.Style = style
-	}
-}
-
-// WithProgressEffect applies visual effects
-func WithProgressEffect(effect ProgressEffect) share.Option[ProgressConfig] {
-	return func(cfg *ProgressConfig) {
-		cfg.Effect = effect
-	}
-}
-
-// WithProgressWriter sets a custom writer for progress output
-func WithProgressWriter(writer io.Writer) share.Option[ProgressConfig] {
-	return func(cfg *ProgressConfig) {
-		cfg.Writer = writer
-	}
-}
-
-// --- CONVENIENCE OPTIONS ---
-
-// WithMaterialTheme applies Material Design theme
-func WithMaterialTheme() share.Option[ProgressConfig] {
-	return WithProgressTheme(MaterialTheme)
-}
-
-// WithDraculaTheme applies Dracula theme
-func WithDraculaTheme() share.Option[ProgressConfig] {
-	return WithProgressTheme(DraculaTheme)
-}
-
-// WithNordTheme applies Nord theme
-func WithNordTheme() share.Option[ProgressConfig] {
-	return WithProgressTheme(NordTheme)
-}
-
-// WithRainbowEffect enables rainbow effect
-func WithRainbowEffect() share.Option[ProgressConfig] {
-	return WithProgressEffect(EffectRainbow)
-}
-
-// WithGradientEffect enables gradient effect
-func WithGradientEffect() share.Option[ProgressConfig] {
-	return WithProgressEffect(EffectGradient)
-}
-
-// --- STYLE OPTIONS ---
-
-// WithBarStyle uses classic progress bar style
-func WithBarStyle() share.Option[ProgressConfig] {
-	return WithProgressStyle(ProgressStyleBar)
-}
-
-// WithDotsStyle uses dots progress style
-func WithDotsStyle() share.Option[ProgressConfig] {
-	return WithProgressStyle(ProgressStyleDots)
-}
-
-// WithArrowsStyle uses arrows progress style
-func WithArrowsStyle() share.Option[ProgressConfig] {
-	return WithProgressStyle(ProgressStyleArrows)
 }
 
 // --- PROGRESS METHODS ---
 
-// Start initializes the progress tracking.
+// Start begins the progress tracking and mounts to RunFX
 func (p *Progress) Start() {
 	p.mu.Lock()
-	if !p.started {
-		p.started = true
+	defer p.mu.Unlock()
+
+	if p.isStarted {
+		return
+	}
+
+	p.isStarted = true
+	p.startTime = time.Now()
+
+	// Create RunFX loop and mount this progress bar
+	p.loop = runfx.Start()
+	var err error
+	p.unmount, err = p.loop.Mount(p)
+	if err != nil {
+		// Fallback to direct rendering if RunFX fails
+		p.loop = nil
+		p.renderDirect()
+		return
+	}
+
+	// Start the RunFX loop in background
+	go func() {
+		ctx := context.Background()
+		p.loop.Run(ctx)
+	}()
+
+	// Initial render
+	p.renderDirect()
+}
+
+// Set updates the current progress value
+func (p *Progress) Set(current int) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if !p.isStarted {
+		p.isStarted = true
 		p.startTime = time.Now()
-		p.render()
+		// Don't auto-start in a goroutine to avoid race conditions
+		// The caller should call Start() explicitly
 	}
-	p.mu.Unlock()
-}
 
-// Set updates the current progress value.
-func (p *Progress) Set(value int) {
-	p.mu.Lock()
-	if !p.started {
-		p.started = true
-		p.startTime = time.Now()
+	// Clamp current to not exceed total
+	if current > p.total {
+		p.current = p.total
+	} else {
+		p.current = current
 	}
-	if value > p.total {
-		value = p.total
-	}
-	p.current = value
-	p.render()
-	p.mu.Unlock()
-}
 
-// Complete marks progress as completed with success message.
-func (p *Progress) Complete(msg string) {
-	p.mu.Lock()
-	p.current = p.total
-	// Clear current line and render final progress with completion message
-	fmt.Fprint(p.writer, "\r")
-	output := RenderBar(p)
-	completion := RenderCompletion(p.theme, msg, true, p.detector)
-	fmt.Fprintln(p.writer, output+completion)
-	p.mu.Unlock()
-}
-
-// Fail marks progress as failed with error message.
-func (p *Progress) Fail(msg string) {
-	p.mu.Lock()
-	p.current = p.total
-	// Clear current line and render final progress with failure message
-	fmt.Fprint(p.writer, "\r")
-	output := RenderBar(p)
-	completion := RenderCompletion(p.theme, msg, false, p.detector)
-	fmt.Fprintln(p.writer, output+completion)
-	p.mu.Unlock()
-}
-
-// render displays the current progress state.
-func (p *Progress) render() {
-	output := RenderBar(p)
-	fmt.Fprint(p.writer, output)
-	// Don't add newline here - let Complete()/Fail() handle final rendering
-}
-
-// Increment increases progress by 1
-func (p *Progress) Increment() {
-	p.Set(p.current + 1)
-}
-
-// Add increases progress by specified amount
-func (p *Progress) Add(amount int) {
-	p.Set(p.current + amount)
+	// Always render to show the update
+	p.renderDirect()
 }
 
 // SetLabel updates the progress label
 func (p *Progress) SetLabel(label string) {
 	p.mu.Lock()
+	defer p.mu.Unlock()
 	p.label = label
-	if p.started {
-		p.render()
+
+	// Render if already started
+	if p.isStarted {
+		p.renderDirect()
 	}
-	p.mu.Unlock()
+}
+
+// SetTotal updates the total value
+func (p *Progress) SetTotal(total int) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.total = total
+}
+
+// Finish completes the progress and unmounts from RunFX
+func (p *Progress) Finish() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if !p.isStarted {
+		return
+	}
+
+	p.current = p.total
+
+	// Render final state
+	if p.loop == nil {
+		p.renderDirect()
+	}
+
+	// Unmount from RunFX
+	if p.unmount != nil {
+		p.unmount()
+		p.unmount = nil
+	}
+
+	// Stop the loop
+	if p.loop != nil {
+		p.loop.Stop()
+		p.loop = nil
+	}
+}
+
+// Close cleans up resources
+func (p *Progress) Close() {
+	if p.unmount != nil {
+		p.unmount()
+	}
+	if p.loop != nil {
+		p.loop.Stop()
+	}
+}
+
+// --- RENDERING ---
+
+// renderProgress generates the progress bar string
+func (p *Progress) renderProgress() string {
+	percentage := float64(p.current) / float64(p.total)
+	if percentage > 1.0 {
+		percentage = 1.0
+	}
+
+	// Use the existing render logic from render.go
+	return RenderBar(p, p.detector)
+}
+
+// renderDirect renders directly to writer (fallback when RunFX not available)
+func (p *Progress) renderDirect() {
+	rendered := p.renderProgress()
+	fmt.Fprint(p.writer, "\r"+rendered)
+}
+
+// --- ADDITIONAL METHODS FOR COMPATIBILITY ---
+
+// Increment increases the progress by 1
+func (p *Progress) Increment() {
+	p.Add(1)
+}
+
+// Add increases the progress by the specified amount
+func (p *Progress) Add(amount int) {
+	p.Set(p.current + amount)
+}
+
+// Complete sets progress to 100% and finishes
+func (p *Progress) Complete(message ...string) {
+	p.Set(p.total)
+
+	// Show completion message with icon
+	if len(message) > 0 && len(message[0]) > 0 {
+		completion := RenderCompletion(p.theme, message[0], true, p.detector)
+		if p.loop == nil {
+			fmt.Fprint(p.writer, completion)
+		}
+	} else {
+		// Default completion message
+		completion := RenderCompletion(p.theme, "Complete", true, p.detector)
+		if p.loop == nil {
+			fmt.Fprint(p.writer, completion)
+		}
+	}
+
+	p.Finish()
+}
+
+// Fail marks progress as failed and finishes
+func (p *Progress) Fail(message ...string) {
+	p.Set(p.total) // Set to 100% to show completion
+
+	// Show failure message with icon
+	if len(message) > 0 && len(message[0]) > 0 {
+		failure := RenderCompletion(p.theme, message[0], false, p.detector)
+		if p.loop == nil {
+			fmt.Fprint(p.writer, failure)
+		}
+	} else {
+		// Default failure message
+		failure := RenderCompletion(p.theme, "Failed", false, p.detector)
+		if p.loop == nil {
+			fmt.Fprint(p.writer, failure)
+		}
+	}
+
+	p.Finish()
 }
 
 // SetTheme updates the progress theme
 func (p *Progress) SetTheme(theme ProgressTheme) {
 	p.mu.Lock()
+	defer p.mu.Unlock()
 	p.theme = theme
-	if p.started {
-		p.render()
-	}
-	p.mu.Unlock()
 }
 
-// SetEffect updates the visual effect
+// SetEffect updates the progress effect
 func (p *Progress) SetEffect(effect ProgressEffect) {
 	p.mu.Lock()
+	defer p.mu.Unlock()
 	p.effect = effect
-	p.theme.EffectEnabled = (effect != EffectNone)
-	if p.started {
-		p.render()
+	// Enable or disable effects based on the effect type
+	if effect == EffectNone {
+		p.theme.EffectEnabled = false
+	} else {
+		p.theme.EffectEnabled = true
 	}
-	p.mu.Unlock()
 }
 
-// GetPercent returns the current progress percentage
+// GetPercent returns the current percentage (0.0 to 100.0)
 func (p *Progress) GetPercent() float64 {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	if p.total == 0 {
-		return 0
+		return 0.0
 	}
-	return float64(p.current) / float64(p.total) * 100
+	percent := float64(p.current) / float64(p.total) * 100.0
+	if percent > 100.0 {
+		return 100.0
+	}
+	return percent
 }
 
-// GetElapsed returns elapsed time since start
+// GetElapsed returns the elapsed time since progress started
 func (p *Progress) GetElapsed() time.Duration {
-	if !p.started {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if !p.isStarted {
 		return 0
 	}
 	return time.Since(p.startTime)
 }
 
-// GetETA estimates remaining time
+// GetETA estimates the time remaining based on current rate
 func (p *Progress) GetETA() time.Duration {
-	if !p.started || p.current == 0 {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if !p.isStarted || p.current == 0 {
 		return 0
 	}
 
-	elapsed := p.GetElapsed()
+	elapsed := time.Since(p.startTime)
 	rate := float64(p.current) / elapsed.Seconds()
-	remaining := float64(p.total-p.current) / rate
 
-	return time.Duration(remaining * float64(time.Second))
-}
-
-// --- GLOBAL CONVENIENCE FUNCTIONS ---
-
-var globalProgress *Progress
-var globalProgressMu sync.Mutex
-
-// StartGlobalProgress starts global progress tracking (EXPRESS API)
-func StartGlobalProgress(total int, label string) {
-	globalProgressMu.Lock()
-	globalProgress = Start(total, label)
-	globalProgressMu.Unlock()
-	globalProgress.Start()
-}
-
-// Set sets global progress value
-func Set(value int) {
-	globalProgressMu.Lock()
-	if globalProgress != nil {
-		globalProgress.Set(value)
+	if rate > 0 {
+		remaining := float64(p.total-p.current) / rate
+		return time.Duration(remaining * float64(time.Second))
 	}
-	globalProgressMu.Unlock()
+
+	return 0
 }
 
-// Increment increments global progress
-func Increment() {
-	globalProgressMu.Lock()
-	if globalProgress != nil {
-		globalProgress.Increment()
+// Redraw forces a redraw of the progress bar
+func (p *Progress) Redraw() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if !p.isStarted {
+		return // Don't render if not started
 	}
-	globalProgressMu.Unlock()
-}
 
-// Complete completes global progress
-func Complete(msg string) {
-	globalProgressMu.Lock()
-	if globalProgress != nil {
-		globalProgress.Complete(msg)
-	}
-	globalProgressMu.Unlock()
-}
-
-// --- PRESET CONSTRUCTORS ---
-
-// NewProgress creates a progress bar with custom configuration
-func NewProgress(total int, label string) *Progress {
-	return newProgress(ProgressConfig{
-		Total: total,
-		Label: label,
-	})
-}
-
-// NewMaterialProgress creates a progress bar with Material Design theme
-func NewMaterialProgress(total int, label string) *Progress {
-	return newProgress(
-		ProgressConfig{Total: total, Label: label},
-		WithMaterialTheme(),
-	)
-}
-
-// NewDraculaProgress creates a progress bar with Dracula theme and rainbow effect
-func NewDraculaProgress(total int, label string) *Progress {
-	return newProgress(
-		ProgressConfig{Total: total, Label: label},
-		WithDraculaTheme(),
-		WithRainbowEffect(),
-	)
-}
-
-// NewNordProgress creates a progress bar with Nord theme
-func NewNordProgress(total int, label string) *Progress {
-	return newProgress(
-		ProgressConfig{Total: total, Label: label},
-		WithNordTheme(),
-	)
-}
-
-// NewRainbowProgress creates a progress bar with rainbow effect
-func NewRainbowProgress(total int, label string) *Progress {
-	return newProgress(
-		ProgressConfig{Total: total, Label: label},
-		WithRainbowEffect(),
-	)
+	// Always render directly for immediate feedback
+	p.renderDirect()
 }

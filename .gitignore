@@ -80,6 +80,6 @@ tramp
 # My brags
 *.cast
 
-# Build executables
-*.exe
-*.out
+# Coverage output   
+coverage.out
+coverage.html

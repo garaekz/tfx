@@ -139,13 +139,13 @@ func runLogxDemo() {
 	expressLogger := logx.Log()
 	expressLogger.Info("🏃 Express path - swift as lightning")
 
-	configLogger := logx.NewWithConfig(logx.LogOptions{
+	configLogger := logx.LogWithConfig(logx.LogOptions{
 		Level:     logx.LevelDebug,
 		Timestamp: true,
 	})
 	configLogger.Debug("🏗️  Config path - engineered with precision")
 
-	fluentLogger := logx.NewWith(
+	fluentLogger := logx.LogWith(
 		logx.WithLevel(logx.LevelInfo),
 		logx.WithTimestamp(false),
 		logx.WithDevelopment(),
@@ -174,7 +174,10 @@ func runLogxDemo() {
 	testErr := errors.New("cosmic service disruption")
 
 	logx.If(testErr).AsError().Msg("🌌 Service portal sealed by interdimensional forces")
-	logx.If(testErr).AsWarn().WithField("retry_count", 3).Msg("🔄 Attempting quantum tunnel reconnection")
+	logx.If(testErr).
+		AsWarn().
+		WithField("retry_count", 3).
+		Msg("🔄 Attempting quantum tunnel reconnection")
 
 	logx.If(testErr).
 		AsError().
