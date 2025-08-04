@@ -5,12 +5,15 @@ import (
 	"io"
 	"testing"
 	"time"
+
+	"github.com/garaekz/tfx/writer"
 )
 
 type dummyVisual struct{}
 
-func (d dummyVisual) Render() []byte    { return nil }
-func (d dummyVisual) OnResize(int, int) {}
+func (d dummyVisual) Render(w writer.Writer) {}
+func (d dummyVisual) Tick(time.Time)         {}
+func (d dummyVisual) OnResize(int, int)      {}
 
 // TestMountVisualLimit ensures that mounting more than MaxVisuals visuals
 // returns ErrTooManyVisuals and does not exceed the allowed limit.
