@@ -2,9 +2,11 @@ package formfx
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/garaekz/tfx/internal/share"
 	"github.com/garaekz/tfx/runfx"
+	"github.com/garaekz/tfx/writer"
 )
 
 // ConfirmPrompt is a high-level UI component for a binary choice (Yes/No).
@@ -130,8 +132,8 @@ func (c *ConfirmPrompt) Canceled() <-chan struct{} {
 // Render implements the runfx.Visual interface.
 // ConfirmPrompt is responsible for translating the state of the internal prompt
 // to a "Yes/No" visual representation.
-func (c *ConfirmPrompt) Render() []byte {
-	return c.renderer.Render(c)
+func (c *ConfirmPrompt) Render(w writer.Writer) {
+	w.Write(c.renderer.Render(c))
 }
 
 // OnKey implements the runfx.Interactive interface by delegating the call to the primitive prompt.
@@ -139,7 +141,10 @@ func (c *ConfirmPrompt) OnKey(key runfx.Key) bool {
 	return c.prompt.OnKey(key)
 }
 
-// OnResize implements the runfx.Visual interface.
+// Tick implements the runfx.Visual interface (no-op).
+func (c *ConfirmPrompt) Tick(now time.Time) {}
+
+// OnResize implements the runfx.Visual interface (no-op).
 func (c *ConfirmPrompt) OnResize(cols, rows int) {}
 
 type ConfirmBuilder struct {

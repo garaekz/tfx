@@ -3,6 +3,8 @@ package runfx
 import (
 	"sync"
 	"sync/atomic"
+
+	"github.com/garaekz/tfx/writer"
 )
 
 // MaxVisuals defines the maximum number of visuals that can be mounted
@@ -71,18 +73,16 @@ func (m *Multiplexer) Count() int {
 	return len(m.visuals)
 }
 
-// Render adds the bytes of all visual components for a single frame.
-func (m *Multiplexer) Render() []byte {
+// Render iterates through all mounted visuals and writes their output to w.
+func (m *Multiplexer) Render(w writer.Writer) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	var out []byte
 	for _, v := range m.visuals {
 		if v != nil {
-			out = append(out, v.Render()...)
+			v.Render(w)
 		}
 	}
-	return out
 }
 
 // OnResize notifies all visual components of a terminal resize event.

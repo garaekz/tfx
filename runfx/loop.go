@@ -1,9 +1,11 @@
 package runfx
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -12,6 +14,13 @@ import (
 	"github.com/garaekz/tfx/terminal"
 	"github.com/garaekz/tfx/writer"
 )
+
+// bufferWriter implements writer.Writer over a byte buffer for off-screen rendering.
+type bufferWriter struct {
+	bytes.Buffer
+}
+
+func (b *bufferWriter) Flush() error { return nil }
 
 // --- Event Types ---
 type (
@@ -34,9 +43,12 @@ type MainLoop struct {
 
 	// Internal State
 	events   chan any // Central event channel
+	cancelMu sync.Mutex
 	cancel   context.CancelFunc
 	rawState *term.State
 	running  atomic.Bool
+
+	lastLen int // track previous frame length for clearing
 }
 
 // --- Public API Methods ---
@@ -96,7 +108,9 @@ func (ml *MainLoop) Run(ctx context.Context) error {
 
 	// Create a cancellable context for the loop's goroutines
 	loopCtx, cancel := context.WithCancel(ctx)
+	ml.cancelMu.Lock()
 	ml.cancel = cancel
+	ml.cancelMu.Unlock()
 	defer ml.ticker.Stop()
 
 	// Start event producers
@@ -104,7 +118,8 @@ func (ml *MainLoop) Run(ctx context.Context) error {
 	go ml.produceTickEvents(loopCtx)
 	go ml.produceSignalEvents(loopCtx)
 
-	// Initial render
+	// Initial render on a clean screen
+	ml.writer.Clear()
 	ml.renderFrame()
 
 	// Main event processing loop
@@ -129,6 +144,8 @@ func (ml *MainLoop) Stop() error {
 	if !ml.running.Load() {
 		return ErrLoopNotRunning
 	}
+	ml.cancelMu.Lock()
+	defer ml.cancelMu.Unlock()
 	if ml.cancel != nil {
 		ml.cancel()
 		return nil
@@ -214,12 +231,10 @@ func (ml *MainLoop) handleEvent(e any) (bool, bool) {
 		// If no component stopped the loop, we assume a state change and re-render.
 		return false, true
 	case tickEvent:
-		// Dispatch tick to all updatable visuals.
+		// Dispatch tick to all visuals.
 		for _, id := range ml.mux.ListVisuals() {
 			if v, ok := ml.mux.GetVisual(id); ok {
-				if u, isUpdatable := v.(Updatable); isUpdatable {
-					u.Tick(event.time)
-				}
+				v.Tick(event.time)
 			}
 		}
 		// A tick always implies a potential visual change.
@@ -240,9 +255,20 @@ func (ml *MainLoop) handleEvent(e any) (bool, bool) {
 
 // renderFrame clears the screen and renders all mounted visuals.
 func (ml *MainLoop) renderFrame() {
-	ml.writer.Clear()
-	// The multiplexer now handles aggregating the render output
-	renderBytes := ml.mux.Render()
-	ml.writer.Write(renderBytes)
+	bw := &bufferWriter{}
+	ml.mux.Render(bw)
+
+	cur := bw.Bytes()
+	ml.writer.MoveCursor(1, 1)
+	ml.writer.Write(cur)
+
+	// Clear any leftover content from previous frame
+	if ml.lastLen > len(cur) {
+		pad := bytes.Repeat([]byte(" "), ml.lastLen-len(cur))
+		ml.writer.Write(pad)
+		ml.writer.Write([]byte("\r"))
+	}
+
 	ml.writer.Flush()
+	ml.lastLen = len(cur)
 }

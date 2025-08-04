@@ -2,8 +2,10 @@ package formfx
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/garaekz/tfx/runfx"
+	"github.com/garaekz/tfx/writer"
 )
 
 // Prompt is the low-level component. It is the central piece that is manipulated.
@@ -144,5 +146,6 @@ func (p *Prompt) OnKey(key runfx.Key) bool {
 }
 
 // These methods are required by the runfx.Visual interface.
-func (p *Prompt) Render() []byte          { return nil }
+func (p *Prompt) Render(w writer.Writer)  {}
+func (p *Prompt) Tick(now time.Time)      {}
 func (p *Prompt) OnResize(cols, rows int) {}
