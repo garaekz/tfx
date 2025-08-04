@@ -3,6 +3,7 @@ package runfx
 import (
 	"fmt"
 	"os"
+	"time"
 )
 
 var debugMode = false
@@ -32,4 +33,16 @@ func LogUnmount(name string) {
 // LogRender logs rendering events
 func LogRender(name string) {
 	DebugLog("Rendered visual: %s", name)
+}
+
+func LogTick(tickCount, count int, elapsed time.Duration) {
+	if debugMode {
+		DebugLog("Tick %d: rendered %d visuals in %s", tickCount, count, elapsed.String())
+	}
+}
+
+func LogFlush(tickCount int, elapsed time.Duration) {
+	if debugMode {
+		DebugLog("Flush after tick %d took %s", tickCount, elapsed.String())
+	}
 }

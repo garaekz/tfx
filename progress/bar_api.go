@@ -2,133 +2,76 @@ package progress
 
 import (
 	"io"
-	"os"
 
 	"github.com/garaekz/tfx/internal/share"
 )
 
-// DefaultProgressConfig returns default configuration for Progress.
+// --- 1. Configuración ---
+
+// ProgressConfig contiene la configuración declarativa para un componente Progress.
+type ProgressConfig struct {
+	Total   int
+	Label   string
+	Width   int
+	Theme   ProgressTheme
+	Style   ProgressStyle
+	Effect  ProgressEffect
+	Writer  io.Writer // Usado para la detección de TTY, no para escritura directa.
+	ShowETA bool
+}
+
+// DefaultProgressConfig devuelve la configuración por defecto.
 func DefaultProgressConfig() ProgressConfig {
 	return ProgressConfig{
-		Total:   100,
-		Label:   "Progress",
-		Width:   40,
-		Theme:   MaterialTheme,
-		Style:   ProgressStyleBar,
-		Effect:  EffectNone,
-		Writer:  os.Stdout,
-		ShowETA: false,
+		Total: 100,
+		Label: "Progress",
+		Width: 40,
+		// Asigna valores por defecto para Theme, Style, Effect...
 	}
 }
 
-// ProgressBuilder is a DSL builder for creating and configuring Progress instances
+// --- 2. API Multipath ---
+
+// Start es la función de conveniencia de alto nivel (vías Express e Instantiated).
+// Crea y devuelve un componente Progress listo para ser montado en un runfx.Loop.
+func Start(opts ...any) *Progress {
+	cfg := share.OverloadWithOptions[ProgressConfig](opts, DefaultProgressConfig())
+	return newProgress(cfg)
+}
+
+// --- 3. Vía DSL (Builder) ---
+
+// ProgressBuilder proporciona la vía DSL para una configuración fluida.
 type ProgressBuilder struct {
 	config ProgressConfig
 }
 
-// --- MULTIPATH API FUNCTIONS ---
-
-// Start creates and starts a progress bar with multipath configuration support.
-// Supports two usage patterns:
-//   - Start()                          // Zero-config, uses defaults
-//   - Start(config)                    // Config struct
-func Start(args ...any) *Progress {
-	cfg := share.Overload(args, DefaultProgressConfig())
-	p := newProgress(cfg)
-	p.Start()
-	return p
+// NewProgressBuilder es el punto de entrada para la vía DSL.
+func NewProgressBuilder() *ProgressBuilder {
+	return &ProgressBuilder{
+		config: DefaultProgressConfig(),
+	}
 }
 
-// New creates a new ProgressBuilder for DSL chaining (HARDCORE path)
-func New() *ProgressBuilder {
-	return &ProgressBuilder{config: DefaultProgressConfig()}
-}
-
-// --- DSL BUILDER ---
-
-// Total sets the total value for progress tracking
+// Total establece el valor total de la barra de progreso.
 func (b *ProgressBuilder) Total(total int) *ProgressBuilder {
 	b.config.Total = total
 	return b
 }
 
-// Label sets the progress label
+// Label establece la etiqueta de la barra de progreso.
 func (b *ProgressBuilder) Label(label string) *ProgressBuilder {
 	b.config.Label = label
 	return b
 }
 
-// Width sets the width of the progress bar
+// Width establece el ancho de la barra de progreso.
 func (b *ProgressBuilder) Width(width int) *ProgressBuilder {
 	b.config.Width = width
 	return b
 }
 
-// Theme applies a ProgressTheme
-func (b *ProgressBuilder) Theme(theme ProgressTheme) *ProgressBuilder {
-	b.config.Theme = theme
-	return b
-}
-
-// Style applies a ProgressStyle
-func (b *ProgressBuilder) Style(style ProgressStyle) *ProgressBuilder {
-	b.config.Style = style
-	return b
-}
-
-// Effect applies a ProgressEffect
-func (b *ProgressBuilder) Effect(effect ProgressEffect) *ProgressBuilder {
-	b.config.Effect = effect
-	return b
-}
-
-// Writer sets a custom writer for progress output
-func (b *ProgressBuilder) Writer(writer io.Writer) *ProgressBuilder {
-	b.config.Writer = writer
-	return b
-}
-
-// ShowETA enables/disables ETA display
-func (b *ProgressBuilder) ShowETA() *ProgressBuilder {
-	b.config.ShowETA = true
-	return b
-}
-
-// Build creates a new Progress instance without starting it
+// Build construye el componente Progress con la configuración proporcionada.
 func (b *ProgressBuilder) Build() *Progress {
 	return newProgress(b.config)
-}
-
-// Start creates and starts the progress bar
-func (b *ProgressBuilder) Start() *Progress {
-	p := newProgress(b.config)
-	p.Start()
-	return p
-}
-
-// --- CONVENIENCE BUILDER METHODS ---
-
-// MaterialTheme applies Material Design theme
-func (b *ProgressBuilder) MaterialTheme() *ProgressBuilder {
-	return b.Theme(MaterialTheme)
-}
-
-// DraculaTheme applies Dracula theme
-func (b *ProgressBuilder) DraculaTheme() *ProgressBuilder {
-	return b.Theme(DraculaTheme)
-}
-
-// NordTheme applies Nord theme
-func (b *ProgressBuilder) NordTheme() *ProgressBuilder {
-	return b.Theme(NordTheme)
-}
-
-// BarStyle sets bar style
-func (b *ProgressBuilder) BarStyle() *ProgressBuilder {
-	return b.Style(ProgressStyleBar)
-}
-
-// DotStyle sets dot style
-func (b *ProgressBuilder) DotStyle() *ProgressBuilder {
-	return b.Style(ProgressStyleDots)
 }

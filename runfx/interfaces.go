@@ -3,22 +3,23 @@ package runfx
 import (
 	"context"
 	"time"
-
-	"github.com/garaekz/tfx/internal/share"
 )
 
-// Visual defines a multiplexed terminal visual managed by RunFX.
 type Visual interface {
-	Render(w share.Writer)
-	Tick(now time.Time)
+	Render() []byte
 	OnResize(cols, rows int)
 }
 
-// Interactive extends Visual with keyboard input handling.
-// Use this interface for visuals that need to respond to user input.
+// Interactive is a Visual that can respond to keyboard input.
 type Interactive interface {
 	Visual
-	OnKey(key Key) bool // Returns true if the key was handled
+	OnKey(key Key) bool // Returns true to stop the loop.
+}
+
+// Updatable define el hook opcional de tick.
+type Updatable interface {
+	Visual
+	Tick(now time.Time)
 }
 
 // Loop defines the runtime loop for mounting and managing visuals.
@@ -27,10 +28,4 @@ type Loop interface {
 	Run(ctx context.Context) error
 	Stop() error
 	IsRunning() bool
-}
-
-// InteractiveLoop extends Loop with keyboard input support.
-type InteractiveLoop interface {
-	Loop
-	MountInteractive(v Interactive) (unmount func(), err error)
 }

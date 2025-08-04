@@ -1,200 +1,107 @@
 package formfx
 
 import (
-	"context"
 	"fmt"
-	"io"
-	"os"
 	"strings"
 
-	"golang.org/x/term"
-
-	"github.com/garaekz/tfx/terminal"
+	"github.com/garaekz/tfx/internal/share"
+	"github.com/garaekz/tfx/runfx"
 )
 
-// ReadPasswordFunc is a function that reads a password from the terminal.
-type ReadPasswordFunc func(fd int) ([]byte, error)
+// --- 1. Configuración y Renderer ---
 
-// MakeRawFunc is a function that puts the terminal into raw mode.
-type MakeRawFunc func(fd uintptr) (*term.State, error)
-
-// RestoreTerminalFunc is a function that restores the terminal to its original mode.
-type RestoreTerminalFunc func(fd uintptr, state *term.State) error
-
-// SecretConfig provides configuration for the Secret prompt.
+// SecretConfig contiene la configuración declarativa para un SecretPrompt.
 type SecretConfig struct {
-	// Label is the prompt message displayed to the user.
-	Label string
-	// Writer is the output writer for the prompt.
-	Writer io.Writer
-	// Reader is the input reader for the prompt (for non-TTY).
-	Reader Reader
-	// Confirm, if true, requires the user to enter the secret twice.
-	Confirm bool
-	// ReadPassword is the function used to read the password (for mocking).
-	ReadPassword ReadPasswordFunc
-	// IsTerminal is the function used to check if stdin is a terminal (for mocking).
-	IsTerminal IsTTYFunc
-	// MakeRaw is the function used to put the terminal into raw mode (for mocking).
-	MakeRaw MakeRawFunc
-	// RestoreTerminal is the function used to restore the terminal (for mocking).
-	RestoreTerminal RestoreTerminalFunc
+	Label    string
+	Confirm  bool
+	Mask     rune // El carácter a usar para enmascarar la entrada.
+	Renderer SecretRenderer
 }
 
-// DefaultSecretConfig returns the default configuration for Secret.
+// DefaultSecretConfig devuelve la configuración por defecto.
 func DefaultSecretConfig() SecretConfig {
 	return SecretConfig{
-		Label:           "Enter secret:",
-		Writer:          os.Stdout,
-		Reader:          NewStdinReader(os.Stdin),
-		Confirm:         false,
-		ReadPassword:    term.ReadPassword,
-		IsTerminal:      IsTTY,
-		MakeRaw:         terminal.MakeRaw,
-		RestoreTerminal: terminal.RestoreTerminal,
+		Label:    "Enter secret:",
+		Confirm:  false,
+		Mask:     '*',
+		Renderer: &DefaultSecretRenderer{},
 	}
 }
 
-// Secret prompts the user for a secret input (with echo off).
-// It supports the Express, Fluent, and Instantiated API patterns.
-//
-// Express API:
-//
-//	result, err := Secret("Your password?")
-//
-// Fluent API:
-//
-//	result, err := SecretWith(WithLabelSecret("Your password?"), WithConfirmSecret(true))
-//
-// Instantiated API:
-//
-//	cfg := DefaultSecretConfig()
-//	cfg.Label = "Your password?"
-//	result, err := SecretWithConfig(cfg)
-func Secret(label string) (string, error) {
-	return SecretWith(WithLabelSecret(label))
+// SecretRenderer define la interfaz para renderizar un componente SecretPrompt.
+type SecretRenderer interface {
+	Render(s *SecretPrompt) []byte
 }
 
-// SecretWith prompts the user for a secret input with functional options.
-func SecretWith(opts ...Option[SecretConfig]) (string, error) {
-	cfg := DefaultSecretConfig()
-	ApplyOptions(&cfg, opts...)
-	return SecretWithConfig(cfg)
+// DefaultSecretRenderer es la implementación estándar.
+type DefaultSecretRenderer struct{}
+
+func (r *DefaultSecretRenderer) Render(s *SecretPrompt) []byte {
+	// Dibuja el label y luego el valor enmascarado del prompt interno.
+	maskedValue := strings.Repeat(string(s.Mask), len(s.prompt.Value))
+	return fmt.Appendf(nil, "%s: %s", s.Label, maskedValue)
 }
 
-// SecretWithConfig prompts the user for a secret input with an explicit config.
-func SecretWithConfig(cfg SecretConfig) (string, error) {
-	fd := int(os.Stdin.Fd())
+// --- 2. El Componente de Alto Nivel: SecretPrompt ---
 
-	// Check if stdin is a terminal
-	// Fallback non-TTY: simple prompt o no-interactive
-	if !cfg.IsTerminal(os.Stdin) {
-		if os.Getenv("FORM_NONINTERACTIVE") == "1" {
-			return "", ErrCanceled
-		}
-		fmt.Fprint(cfg.Writer, cfg.Label+": ")
-		input, err := cfg.Reader.ReadLine(context.Background())
-		if err != nil {
-			if err == io.EOF {
-				return "", io.EOF
-			}
-			return "", err
-		}
-		return strings.TrimSpace(input), nil
-	}
-
-	// Save old state and set raw mode
-	oldState, err := cfg.MakeRaw(uintptr(fd))
-	if err != nil {
-		return "", fmt.Errorf("failed to set raw terminal mode: %w", err)
-	}
-	defer cfg.RestoreTerminal(uintptr(fd), oldState)
-
-	for {
-		fmt.Fprint(cfg.Writer, cfg.Label+": ")
-		byteSecret, err := cfg.ReadPassword(fd)
-		if err != nil {
-			if err == io.EOF {
-				return "", io.EOF
-			}
-			return "", err
-		}
-		fmt.Fprintln(cfg.Writer) // Newline after input
-		secret := string(byteSecret)
-
-		if cfg.Confirm {
-			fmt.Fprint(cfg.Writer, "Confirm secret: ")
-			byteConfirm, err := cfg.ReadPassword(fd)
-			if err != nil {
-				if err == io.EOF {
-					return "", io.EOF
-				}
-				return "", err
-			}
-			fmt.Fprintln(cfg.Writer) // Newline after input
-			confirm := string(byteConfirm)
-
-			if secret != confirm {
-				fmt.Fprintln(cfg.Writer, "Secrets do not match. Please try again.")
-				continue
-			}
-		}
-		return secret, nil
-	}
+// SecretPrompt es un componente de UI para la entrada de texto secreto.
+type SecretPrompt struct {
+	prompt   *InputPrompt // El primitivo que gestiona el estado del texto.
+	Label    string
+	Confirm  bool
+	Mask     rune
+	renderer SecretRenderer
 }
 
-// WithLabelSecret sets the label for the Secret prompt.
-func WithLabelSecret(label string) Option[SecretConfig] {
-	return func(cfg *SecretConfig) {
-		cfg.Label = label
+// NewSecretPrompt es el constructor explícito y fuertemente tipado.
+func NewSecretPrompt(cfg SecretConfig) (*SecretPrompt, error) {
+	// La lógica de confirmación se manejará en un nivel superior o en un handler especializado.
+	// Por ahora, el primitivo solo captura una entrada.
+	p := NewInputPrompt("")
+
+	renderer := cfg.Renderer
+	if renderer == nil {
+		renderer = &DefaultSecretRenderer{}
 	}
+
+	return &SecretPrompt{
+		Label:    cfg.Label,
+		Confirm:  cfg.Confirm,
+		Mask:     cfg.Mask,
+		prompt:   p,
+		renderer: renderer,
+	}, nil
 }
 
-// WithConfirmSecret sets whether the Secret prompt requires confirmation.
-func WithConfirmSecret(confirm bool) Option[SecretConfig] {
-	return func(cfg *SecretConfig) {
-		cfg.Confirm = confirm
-	}
+// --- 3. La Función de Conveniencia "Multipath" ---
+
+// Secret es la función de conveniencia de alto nivel.
+func Secret(opts ...any) (*SecretPrompt, error) {
+	cfg := share.OverloadWithOptions[SecretConfig](opts, DefaultSecretConfig())
+	return NewSecretPrompt(cfg)
 }
 
-// WithSecretWriter sets the output writer for the Secret prompt.
-func WithSecretWriter(w io.Writer) Option[SecretConfig] {
-	return func(cfg *SecretConfig) {
-		cfg.Writer = w
-	}
+// --- Métodos del Componente ---
+
+func (s *SecretPrompt) Done() <-chan string {
+	return s.prompt.Done
 }
 
-// WithSecretReader sets the input reader for the Secret prompt.
-func WithSecretReader(r Reader) Option[SecretConfig] {
-	return func(cfg *SecretConfig) {
-		cfg.Reader = r
-	}
+func (s *SecretPrompt) Canceled() <-chan struct{} {
+	return s.prompt.Canceled
 }
 
-// WithReadPasswordFunc sets the function used to read the password.
-func WithReadPasswordFunc(f ReadPasswordFunc) Option[SecretConfig] {
-	return func(cfg *SecretConfig) {
-		cfg.ReadPassword = f
-	}
+// --- Implementación de Interfaces de RunFX ---
+
+func (s *SecretPrompt) Render() []byte {
+	return s.renderer.Render(s)
 }
 
-// WithIsTerminalSecret sets the function used to check if stdin is a terminal.
-func WithIsTerminalSecret(f IsTTYFunc) Option[SecretConfig] {
-	return func(cfg *SecretConfig) {
-		cfg.IsTerminal = f
-	}
+func (s *SecretPrompt) OnKey(key runfx.Key) bool {
+	// La lógica de confirmación (pedir el secreto dos veces) se implementaría aquí,
+	// gestionando un estado interno para saber en qué paso estamos.
+	// Por simplicidad, esta versión solo delega al prompt primitivo.
+	return s.prompt.OnKey(key)
 }
 
-// WithMakeRawFunc sets the function used to put the terminal into raw mode.
-func WithMakeRawFunc(f MakeRawFunc) Option[SecretConfig] {
-	return func(cfg *SecretConfig) {
-		cfg.MakeRaw = f
-	}
-}
-
-// WithRestoreTerminalFunc sets the function used to restore the terminal.
-func WithRestoreTerminalFunc(f RestoreTerminalFunc) Option[SecretConfig] {
-	return func(cfg *SecretConfig) {
-		cfg.RestoreTerminal = f
-	}
-}
+func (s *SecretPrompt) OnResize(cols, rows int) {}

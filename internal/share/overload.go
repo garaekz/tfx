@@ -33,20 +33,52 @@ func Overload[T any](have []any, fallback T) T {
 	}
 }
 
-// OverloadWithOptions[T] combines flexible overload + option injection.
+// OverloadWithOptions[T] handles multipath with strict rules:
 //
-// - If no value is provided, fallback is used.
-// - If one value is provided, it MUST be T or *T, or panics.
-// - Any additional functional options are applied to the result.
-//
-// Equivalent to:
-//
-//     instance := Overload(have, fallback)
-//     ApplyOptions(&instance, opts...)
-//
+// - If no args: use fallback
+// - Can mix: config struct (T or *T) + functional options (Option[T])
+// - Only one config struct allowed
+// - All types must match T
+func OverloadWithOptions[T any](args []any, fallback T) T {
+	if len(args) == 0 {
+		return fallback
+	}
 
-func OverloadWithOptions[T any](have []any, fallback T, opts ...Option[T]) T {
-	instance := Overload(have, fallback)
-	ApplyOptions(&instance, opts...)
+	var holder *T
+	var options []Option[T]
+
+	for _, arg := range args {
+		switch v := arg.(type) {
+		case T:
+			if holder != nil {
+				panic("OverloadWithOptions: multiple config structs not allowed")
+			}
+			temp := v
+			holder = &temp
+		case *T:
+			if holder != nil {
+				panic("OverloadWithOptions: multiple config structs not allowed")
+			}
+			holder = v
+		case Option[T]:
+			options = append(options, v)
+		default:
+			panic(fmt.Sprintf(
+				"OverloadWithOptions: expected type %T, *%T, or Option[%T], got %T",
+				fallback, &fallback, fallback, arg,
+			))
+		}
+	}
+
+	// Determine the base instance
+	var instance T
+	if holder != nil {
+		instance = *holder
+	} else {
+		instance = fallback
+	}
+
+	// Apply all functional options
+	ApplyOptions(&instance, options...)
 	return instance
 }

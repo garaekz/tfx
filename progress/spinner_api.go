@@ -2,160 +2,76 @@ package progress
 
 import (
 	"io"
-	"os"
-	"time"
 
 	"github.com/garaekz/tfx/internal/share"
 )
 
-// --- SPINNER MULTIPATH API ---
+// --- 1. Configuración ---
 
-// DefaultSpinnerConfig returns default configuration for Spinner.
+// SpinnerConfig contiene la configuración declarativa para un componente Spinner.
+type SpinnerConfig struct {
+	Total   int
+	Label   string
+	Width   int
+	Theme   ProgressTheme
+	Style   ProgressStyle
+	Effect  ProgressEffect
+	Writer  io.Writer // Usado para la detección de TTY, no para escritura directa.
+	ShowETA bool
+}
+
+// DefaultSpinnerConfig devuelve la configuración por defecto.
 func DefaultSpinnerConfig() SpinnerConfig {
 	return SpinnerConfig{
-		Message:  "",
-		Frames:   []string{"|", "/", "-", "\\"},
-		Interval: 100 * time.Millisecond,
-		Theme:    MaterialTheme,
-		Effect:   SpinnerEffectNone,
-		Writer:   os.Stdout,
+		Total: 100,
+		Label: "Spinner",
+		Width: 40,
+		// Asigna valores por defecto para Theme, Style, Effect...
 	}
 }
 
-// SpinnerBuilder provides a fluent interface for configuring spinners
+// --- 2. API Multipath ---
+
+// Start es la función de conveniencia de alto nivel (vías Express e Instantiated).
+// Crea y devuelve un componente Spinner listo para ser montado en un runfx.Loop.
+func StartSpinner(opts ...any) *Spinner {
+	cfg := share.OverloadWithOptions[SpinnerConfig](opts, DefaultSpinnerConfig())
+	return newSpinner(cfg)
+}
+
+// --- 3. Vía DSL (Builder) ---
+
+// SpinnerBuilder proporciona la vía DSL para una configuración fluida.
 type SpinnerBuilder struct {
 	config SpinnerConfig
 }
 
-// --- MULTIPATH API FUNCTIONS ---
-
-// StartSpinner creates and starts a spinner with multipath configuration support.
-// Supports multiple usage patterns:
-//   - StartSpinner()                   // Zero-config, uses defaults
-//   - StartSpinner("message")          // Express mode with message
-//   - StartSpinner(config)             // Config struct
-func StartSpinner(args ...any) *Spinner {
-	var cfg SpinnerConfig
-
-	if len(args) == 0 {
-		cfg = DefaultSpinnerConfig()
-	} else if len(args) == 1 {
-		switch v := args[0].(type) {
-		case string:
-			// Express mode: string message
-			cfg = DefaultSpinnerConfig()
-			cfg.Message = v
-		case SpinnerConfig:
-			cfg = v
-		default:
-			cfg = share.Overload(args, DefaultSpinnerConfig())
-		}
-	} else {
-		cfg = share.Overload(args, DefaultSpinnerConfig())
+// NewSpinnerBuilder es el punto de entrada para la vía DSL.
+func NewSpinnerBuilder() *SpinnerBuilder {
+	return &SpinnerBuilder{
+		config: DefaultSpinnerConfig(),
 	}
-
-	s := NewSpinnerWithConfig(cfg)
-	s.Start()
-	return s
 }
 
-// NewSpinner creates a new SpinnerBuilder for DSL chaining (HARDCORE path)
-func NewSpinner() *SpinnerBuilder {
-	return &SpinnerBuilder{config: DefaultSpinnerConfig()}
-}
-
-// --- DSL BUILDER (HARDCORE PATH) ---
-
-// Message sets the spinner message
-func (b *SpinnerBuilder) Message(message string) *SpinnerBuilder {
-	b.config.Message = message
+// Total establece el valor total de la barra de progreso.
+func (b *SpinnerBuilder) Total(total int) *SpinnerBuilder {
+	b.config.Total = total
 	return b
 }
 
-// Frames sets custom frames for the spinner animation
-func (b *SpinnerBuilder) Frames(frames []string) *SpinnerBuilder {
-	b.config.Frames = frames
+// Label establece la etiqueta de la barra de progreso.
+func (b *SpinnerBuilder) Label(label string) *SpinnerBuilder {
+	b.config.Label = label
 	return b
 }
 
-// Interval sets the frame interval duration
-func (b *SpinnerBuilder) Interval(interval time.Duration) *SpinnerBuilder {
-	b.config.Interval = interval
+// Width establece el ancho de la barra de progreso.
+func (b *SpinnerBuilder) Width(width int) *SpinnerBuilder {
+	b.config.Width = width
 	return b
 }
 
-// Theme applies a ProgressTheme to colorize the spinner
-func (b *SpinnerBuilder) Theme(theme ProgressTheme) *SpinnerBuilder {
-	b.config.Theme = theme
-	return b
-}
-
-// Effect applies visual effects
-func (b *SpinnerBuilder) Effect(effect SpinnerEffect) *SpinnerBuilder {
-	b.config.Effect = effect
-	return b
-}
-
-// Writer sets a custom writer for spinner output
-func (b *SpinnerBuilder) Writer(writer io.Writer) *SpinnerBuilder {
-	b.config.Writer = writer
-	return b
-}
-
-// Build creates a new Spinner instance without starting it
+// Build construye el componente Spinner con la configuración proporcionada.
 func (b *SpinnerBuilder) Build() *Spinner {
 	return newSpinner(b.config)
-}
-
-// Start creates and starts the spinner
-func (b *SpinnerBuilder) Start() *Spinner {
-	s := newSpinner(b.config)
-	s.Start()
-	return s
-}
-
-// --- CONVENIENCE BUILDER METHODS ---
-
-// MaterialTheme applies Material Design theme
-func (b *SpinnerBuilder) MaterialTheme() *SpinnerBuilder {
-	return b.Theme(MaterialTheme)
-}
-
-// DraculaTheme applies Dracula theme
-func (b *SpinnerBuilder) DraculaTheme() *SpinnerBuilder {
-	return b.Theme(DraculaTheme)
-}
-
-// NordTheme applies Nord theme
-func (b *SpinnerBuilder) NordTheme() *SpinnerBuilder {
-	return b.Theme(NordTheme)
-}
-
-// Rainbow enables rainbow effect
-func (b *SpinnerBuilder) Rainbow() *SpinnerBuilder {
-	return b.Effect(SpinnerEffectRainbow)
-}
-
-// --- PRESET FRAMES ---
-
-// DotsFrames uses dots animation
-func (b *SpinnerBuilder) DotsFrames() *SpinnerBuilder {
-	return b.Frames([]string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"})
-}
-
-// ArrowFrames uses arrow animation
-func (b *SpinnerBuilder) ArrowFrames() *SpinnerBuilder {
-	return b.Frames([]string{"←", "↖", "↑", "↗", "→", "↘", "↓", "↙"})
-}
-
-// BounceFrames uses bouncing animation
-func (b *SpinnerBuilder) BounceFrames() *SpinnerBuilder {
-	return b.Frames([]string{"⠁", "⠂", "⠄", "⠂"})
-}
-
-// --- INTERNAL IMPLEMENTATION ---
-
-// newSpinner is the internal implementation
-func newSpinner(cfg SpinnerConfig) *Spinner {
-	return NewSpinnerWithConfig(cfg)
 }

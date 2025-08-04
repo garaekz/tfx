@@ -1,290 +1,201 @@
 package formfx
 
 import (
-	"context"
 	"fmt"
-	"io"
-	"os"
-	"strings"
-	"time"
 
 	"github.com/garaekz/tfx/internal/share"
 	"github.com/garaekz/tfx/runfx"
-	"github.com/garaekz/tfx/terminal"
 )
 
-// ConfirmConfig provides configuration for the Confirm prompt.
-type ConfirmConfig struct {
-	// Label is the prompt message displayed to the user.
-	Label string
-	// Default is the default value if the user just presses Enter.
-	Default bool
-	// Writer is the output writer for the prompt.
-	Writer io.Writer
-	// Reader is the input reader for the prompt.
-	Reader Reader
-	// Interactive enables RunFX-powered interactive mode with visual feedback.
-	Interactive bool
+// ConfirmPrompt is a high-level UI component for a binary choice (Yes/No).
+// It uses a primitive Prompt internally to manage state.
+type ConfirmPrompt struct {
+	prompt   *Prompt
+	Label    string
+	renderer ConfirmRenderer // Renderer to customize visualization.
 }
 
-// DefaultConfirmConfig returns the default configuration for Confirm.
-func DefaultConfirmConfig() ConfirmConfig {
-	// Detect if we're in an interactive environment
-	ttyInfo := runfx.DetectTTY()
-
-	return ConfirmConfig{
-		Label:       "Are you sure?",
-		Default:     false,
-		Writer:      os.Stdout,
-		Reader:      NewStdinReader(os.Stdin),
-		Interactive: ttyInfo.IsTTY, // Enable interactive mode if TTY available
-	}
+// ConfirmRenderer is the interface that defines how a ConfirmPrompt component should be rendered.
+type ConfirmRenderer interface {
+	Render(c *ConfirmPrompt) []byte
 }
 
-// --- MULTIPATH API FUNCTIONS ---
+// DefaultConfirmRenderer is the standard implementation that draws "[Yes] / No".
+type DefaultConfirmRenderer struct{}
 
-// Confirm prompts the user for a yes/no confirmation with multipath configuration support.
-// Supports two usage patterns:
-//   - Confirm(label)                         // Express: simple label
-//   - Confirm(config)                        // Instantiated: config struct
-func Confirm(args ...any) (bool, error) {
-	// Handle different argument patterns
-	if len(args) == 0 {
-		// No args: use default config
-		cfg := DefaultConfirmConfig()
-		return ConfirmWithConfig(cfg)
-	}
+// Render translates the state of ConfirmPrompt to a visual representation.
+func (r *DefaultConfirmRenderer) Render(c *ConfirmPrompt) []byte {
+	var yes, no string
 
-	// Check if first arg is a string (Express API)
-	if label, ok := args[0].(string); ok {
-		cfg := DefaultConfirmConfig()
-		cfg.Label = label
-		return ConfirmWithConfig(cfg)
-	}
-
-	// Otherwise use Overload for config struct
-	cfg := share.Overload(args, DefaultConfirmConfig())
-	return ConfirmWithConfig(cfg)
-}
-
-// NewConfirm creates a new ConfirmBuilder for DSL chaining.
-func NewConfirm() *ConfirmBuilder {
-	return &ConfirmBuilder{config: DefaultConfirmConfig()}
-}
-
-// ConfirmWithConfig prompts the user for a yes/no confirmation with an explicit config.
-func ConfirmWithConfig(cfg ConfirmConfig) (bool, error) {
-	// Check for non-interactive environment
-	if !terminal.IsTerminal(os.Stdin) && os.Getenv("FORM_NONINTERACTIVE") == "1" {
-		return cfg.Default, nil
-	}
-
-	// Use interactive mode if enabled and available
-	if cfg.Interactive {
-		return confirmInteractive(cfg)
-	}
-
-	// Fall back to simple text mode
-	return confirmSimple(cfg)
-}
-
-// confirmSimple provides a simple text-based confirmation prompt.
-func confirmSimple(cfg ConfirmConfig) (bool, error) {
-	// Determine prompt suffix based on default value
-	suffix := " (y/N) "
-	if cfg.Default {
-		suffix = " (Y/n) "
-	}
-
-	prompt := cfg.Label + suffix
-
-	// Loop until valid input
-	for {
-		fmt.Fprint(cfg.Writer, prompt)
-		input, err := cfg.Reader.ReadLine(context.Background())
-		if err != nil {
-			return cfg.Default, err
-		}
-		input = strings.ToLower(strings.TrimSpace(input))
-		if input == "y" || input == "yes" {
-			return true, nil
-		}
-		if input == "n" || input == "no" {
-			return false, nil
-		}
-		if input == "" {
-			return cfg.Default, nil
-		}
-		fmt.Fprintln(cfg.Writer, "Please enter 'y' or 'n'.")
-	}
-}
-
-// confirmInteractive provides an interactive confirmation prompt with visual feedback.
-func confirmInteractive(cfg ConfirmConfig) (bool, error) {
-	// Create an interactive confirm using RunFX
-	confirmer := &ConfirmVisual{
-		config:    cfg,
-		selection: cfg.Default, // Start with default selection
-		done:      make(chan bool, 1),
-		canceled:  make(chan bool, 1),
-	}
-
-	// Create interactive loop and mount the visual component
-	loop := runfx.StartInteractive()
-	unmount, err := loop.MountInteractive(confirmer)
-	if err != nil {
-		// Fall back to simple mode if RunFX fails
-		return confirmSimple(cfg)
-	}
-	defer unmount()
-
-	// Start the main loop in background
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	go func() {
-		if err := loop.Run(ctx); err != nil {
-			// Log error or handle it appropriately
-		}
-	}()
-
-	// Wait for user confirmation or cancellation
-	select {
-	case result := <-confirmer.done:
-		loop.Stop()
-		return result, nil
-	case <-confirmer.canceled:
-		loop.Stop()
-		return cfg.Default, ErrCanceled
-	case <-ctx.Done():
-		loop.Stop()
-		return cfg.Default, ctx.Err()
-	}
-}
-
-// ConfirmVisual implements runfx.Interactive for interactive confirmation with visual feedback.
-type ConfirmVisual struct {
-	config    ConfirmConfig
-	selection bool // Current selection (true for Yes, false for No)
-	done      chan bool
-	canceled  chan bool
-}
-
-// Render implements runfx.Visual - displays the confirmation prompt.
-func (cv *ConfirmVisual) Render(w share.Writer) {
-	var output strings.Builder
-
-	output.WriteString(cv.config.Label)
-	output.WriteString("\n\n")
-
-	// Show Yes/No options with visual indication
-	yesPrefix := "  "
-	noPrefix := "  "
-
-	if cv.selection {
-		yesPrefix = "▶ " // Arrow indicator for Yes
+	// Check the state of the internal prompt to decide how to draw.
+	if c.prompt.SelectedIndex == 0 {
+		yes = "[Yes]" // Style for the selected option.
+		no = " No "
 	} else {
-		noPrefix = "▶ " // Arrow indicator for No
+		yes = " Yes "
+		no = "[No]"
+	}
+	return fmt.Appendf(nil, "%s\n%s%s\n", c.Label, yes, no)
+}
+
+// ConfirmConfig holds the configuration for ConfirmPrompt.
+type ConfirmConfig struct {
+	Label        string          // The question to ask.
+	DefaultValue bool            // Default selection (true for Yes, false for No).
+	KeyHandler   KeyHandlerFunc  // Custom key handling logic.
+	Renderer     ConfirmRenderer // Custom renderer for visualization.
+}
+
+// DefaultConfirmConfig returns a default configuration for ConfirmPrompt.
+func DefaultConfirmConfig() *ConfirmConfig {
+	return &ConfirmConfig{
+		Label:        "Confirm your choice:",
+		DefaultValue: true,                      // Default to Yes.
+		KeyHandler:   HorizontalKeyHandler,      // Default horizontal navigation.
+		Renderer:     &DefaultConfirmRenderer{}, // Default renderer.
+	}
+}
+
+// sanitize validates the ConfirmConfig to ensure it has valid values.
+func (c *ConfirmConfig) sanitize() error {
+	if c == nil {
+		return fmt.Errorf("%v [ConfirmConfig]", ErrConfigNotSet)
 	}
 
-	output.WriteString(fmt.Sprintf("%sYes\n", yesPrefix))
-	output.WriteString(fmt.Sprintf("%sNo\n", noPrefix))
-
-	// Show navigation hints
-	output.WriteString("\n")
-	output.WriteString("Use ↑↓ arrows, WASD, or Y/N to choose, Enter to confirm, Esc to cancel")
-
-	// Write as a share.Entry
-	entry := &share.Entry{
-		Message: output.String(),
+	if c.Label == "" {
+		return fmt.Errorf("label cannot be empty")
 	}
-	w.Write(entry)
-}
 
-// OnKey implements runfx.Interactive - handles keyboard input.
-func (cv *ConfirmVisual) OnKey(key runfx.Key) bool {
-	switch key {
-	case runfx.KeyArrowUp, runfx.KeyW:
-		cv.selection = true // Move to Yes
-		return true
-	case runfx.KeyArrowDown, runfx.KeyS:
-		cv.selection = false // Move to No
-		return true
-	case runfx.KeyEnter:
-		cv.done <- cv.selection
-		return true
-	case runfx.KeyEscape, runfx.KeyQ:
-		cv.canceled <- true
-		return true
-	// Allow direct Y/N input
-	case runfx.KeyY:
-		cv.selection = true
-		cv.done <- true
-		return true
-	case runfx.KeyN:
-		cv.selection = false
-		cv.done <- false
-		return true
+	if c.KeyHandler == nil {
+		c.KeyHandler = HorizontalKeyHandler // Default to horizontal navigation.
 	}
-	return false // Key not handled
+
+	if c.Renderer == nil {
+		c.Renderer = &DefaultConfirmRenderer{} // Use the default renderer.
+	}
+	return nil
 }
 
-// OnResize implements runfx.Visual - handles terminal resize.
-func (cv *ConfirmVisual) OnResize(cols, rows int) {
-	// ConfirmVisual doesn't need special resize handling
+// Confirm creates a new ConfirmPrompt with the given label and default selection.
+// It defaults to "Yes" if defaultValue is true, otherwise "No".
+func Confirm(args ...any) (*ConfirmPrompt, error) {
+	cfg := share.OverloadWithOptions(args, DefaultConfirmConfig())
+	return NewConfirmPrompt(cfg)
 }
 
-// Tick implements runfx.Visual - called on each render cycle.
-func (cv *ConfirmVisual) Tick(now time.Time) {
-	// ConfirmVisual doesn't need tick-based updates
+// NewConfirmPrompt creates a new Confirm component.
+// `label` is the question to ask.
+// `defaultValue` sets the initial selection (0 for Yes, false for No).
+// It panics if the defaultValue is not a boolean.
+func NewConfirmPrompt(cfg *ConfirmConfig) (*ConfirmPrompt, error) {
+	if err := cfg.sanitize(); err != nil {
+		return nil, err
+	}
+	// Set the default index based on the defaultValue.
+	defaultIndex := 0 // Default to Yes.
+	if !cfg.DefaultValue {
+		defaultIndex = 1 // Select No if defaultValue is false.
+	}
+
+	prompt, err := NewPrompt(2, defaultIndex)
+	if err != nil {
+		return nil, err
+	}
+	// Set the key handler and renderer.
+	prompt.SetKeyHandler(cfg.KeyHandler)
+
+	return &ConfirmPrompt{
+		prompt:   prompt,
+		Label:    cfg.Label,
+		renderer: cfg.Renderer,
+	}, nil
 }
 
-// --- DSL BUILDER ---
+// SetRenderer allows changing the renderer of ConfirmPrompt.
+func (c *ConfirmPrompt) SetRenderer(r ConfirmRenderer) {
+	c.renderer = r
+}
 
-// ConfirmBuilder provides a fluent API for building confirmation prompts.
+// Done returns a channel that will receive the result index when the user confirms.
+// The caller is responsible for translating the index (0 for Yes, 1 for No).
+func (c *ConfirmPrompt) Done() <-chan int {
+	return c.prompt.Done
+}
+
+// Canceled returns a channel that will be closed if the user cancels the operation.
+func (c *ConfirmPrompt) Canceled() <-chan struct{} {
+	return c.prompt.Canceled
+}
+
+// Render implements the runfx.Visual interface.
+// ConfirmPrompt is responsible for translating the state of the internal prompt
+// to a "Yes/No" visual representation.
+func (c *ConfirmPrompt) Render() []byte {
+	return c.renderer.Render(c)
+}
+
+// OnKey implements the runfx.Interactive interface by delegating the call to the primitive prompt.
+func (c *ConfirmPrompt) OnKey(key runfx.Key) bool {
+	return c.prompt.OnKey(key)
+}
+
+// OnResize implements the runfx.Visual interface.
+func (c *ConfirmPrompt) OnResize(cols, rows int) {}
+
 type ConfirmBuilder struct {
-	config ConfirmConfig
+	config *ConfirmConfig
 }
 
-// Label sets the prompt label.
-func (cb *ConfirmBuilder) Label(label string) *ConfirmBuilder {
-	cb.config.Label = label
-	return cb
-}
-
-// Default sets the default value.
-func (cb *ConfirmBuilder) Default(value bool) *ConfirmBuilder {
-	cb.config.Default = value
-	return cb
-}
-
-// Writer sets the output writer.
-func (cb *ConfirmBuilder) Writer(writer io.Writer) *ConfirmBuilder {
-	cb.config.Writer = writer
-	return cb
-}
-
-// Reader sets the input reader.
-func (cb *ConfirmBuilder) Reader(reader Reader) *ConfirmBuilder {
-	cb.config.Reader = reader
-	return cb
-}
-
-// Interactive enables or disables interactive mode.
-func (cb *ConfirmBuilder) Interactive(enabled bool) *ConfirmBuilder {
-	cb.config.Interactive = enabled
-	return cb
-}
-
-// Build creates a function that shows the confirmation prompt.
-func (cb *ConfirmBuilder) Build() func() (bool, error) {
-	config := cb.config
-	return func() (bool, error) {
-		return ConfirmWithConfig(config)
+// NewConfirmBuilder is a non standard way to create a ConfirmPrompt.
+// Its experimental and it's intended for builder patterns.
+func NewConfirmBuilder(label string, defaultValue bool) *ConfirmBuilder {
+	return &ConfirmBuilder{
+		config: &ConfirmConfig{
+			Label:        label,
+			DefaultValue: defaultValue,
+			KeyHandler:   HorizontalKeyHandler, // Default horizontal navigation.
+			Renderer:     &DefaultConfirmRenderer{},
+		},
 	}
 }
 
-// Show displays the confirmation prompt and returns the result.
-func (cb *ConfirmBuilder) Show() (bool, error) {
-	return ConfirmWithConfig(cb.config)
+// KeyHandler sets a custom key handler for the ConfirmPrompt.
+func (b *ConfirmBuilder) KeyHandler(handler KeyHandlerFunc) *ConfirmBuilder {
+	if handler == nil {
+		panic("You must provide a key handler function")
+	}
+	b.config.KeyHandler = handler
+	return b
+}
+
+// Renderer sets a custom renderer for the ConfirmPrompt.
+func (b *ConfirmBuilder) Renderer(renderer ConfirmRenderer) *ConfirmBuilder {
+	if renderer == nil {
+		panic("You must provide a renderer")
+	}
+	b.config.Renderer = renderer
+	return b
+}
+
+// DefaultValue sets the default selection for the ConfirmPrompt.
+func (b *ConfirmBuilder) DefaultValue(defaultValue bool) *ConfirmBuilder {
+	b.config.DefaultValue = defaultValue
+	return b
+}
+
+// Label sets the label for the ConfirmPrompt.
+func (b *ConfirmBuilder) Label(label string) *ConfirmBuilder {
+	if label == "" {
+		panic("Label cannot be empty")
+	}
+	b.config.Label = label
+	return b
+}
+
+// Build constructs the ConfirmPrompt with the provided configuration.
+func (b *ConfirmBuilder) Build() (*ConfirmPrompt, error) {
+	if err := b.config.sanitize(); err != nil {
+		return nil, err
+	}
+	return NewConfirmPrompt(b.config)
 }

@@ -13,68 +13,27 @@ import (
 // --- MULTIPATH API FUNCTIONS ---
 
 // Start creates and starts a new Loop with multipath configuration support.
-// BEGINNER path - supports two usage patterns:
-//   - Start()         // Zero-config, uses defaults
-//   - Start(config)   // Config struct
-func Start(args ...any) Loop {
-	cfg := share.Overload(args, DefaultConfig())
-	return NewLoopWithConfig(cfg)
+// opts Type: any = Option[Config] | Config
+func Start(opts ...any) Loop {
+	return newLoopWithConfig(share.OverloadWithOptions(opts, DefaultConfig()))
 }
 
-// StartInteractive creates and starts an interactive Loop with keyboard input.
-// INTERACTIVE path - supports two usage patterns:
-//   - StartInteractive()         // Interactive with defaults
-//   - StartInteractive(config)   // Interactive with config
-func StartInteractive(args ...any) InteractiveLoop {
-	cfg := share.Overload(args, DefaultConfig())
-	loop := NewLoopWithConfig(cfg)
-
-	// Enable interactive mode
-	if mainLoop, ok := loop.(*MainLoop); ok {
-		mainLoop.EnableInteractive()
-		return mainLoop
-	}
-
-	// Fallback - shouldn't happen with current implementation
-	return loop.(*MainLoop)
-}
-
-// NewLoopWithConfig creates a new Loop with the given configuration
-func NewLoopWithConfig(cfg Config) Loop {
-	ttyInfo := DetectTTY()
-
-	// Create terminal writer with configuration
-	terminalOpts := writer.TerminalOptions{
+// newLoopWithConfig creates a new Loop with the given configuration
+func newLoopWithConfig(cfg Config) Loop {
+	ttyInfo := DetectTTYForOutput(cfg.Output)
+	tw := writer.NewTerminalWriter(cfg.Output, writer.TerminalOptions{
 		DoubleBuffer: true,
-		ForceColor:   false,
 		DisableColor: ttyInfo.NoColor,
-	}
-	termWriter := writer.NewTerminalWriter(cfg.Output, terminalOpts)
+	})
 
 	return &MainLoop{
-		mux:          NewMultiplexer(),
-		terminal:     termWriter,
-		cursor:       &CursorManager{},
-		screen:       NewScreenManager(),
-		signals:      *terminal.NewSignalHandler(),
-		eventLoop:    NewEventLoop(cfg.TickInterval),
-		ttyInfo:      &ttyInfo,
-		keyReader:    NewKeyReader(os.Stdin),       // Initialize key reader with stdin
-		interactives: make(map[Visual]Interactive), // Initialize interactives map
-		inputEnabled: ttyInfo.IsTTY,                // Enable input in TTY environments
-		stopCh:       make(chan struct{}),
-		output:       cfg.Output,
-		nextRegion:   0,
-		testMode:     cfg.TestMode,
+		mux:     NewMultiplexer(),
+		writer:  tw,
+		reader:  NewKeyReader(os.Stdin),
+		signals: terminal.NewSignalHandler(),
+		events:  make(chan any, 64), // buffered channel for events
+		ticker:  time.NewTicker(cfg.TickInterval),
 	}
-}
-
-// StartWith creates and starts a new Loop using functional options only
-// EXPERIMENTAL path - not currently in active use, experimental feature
-func StartWith(opts ...share.Option[Config]) Loop {
-	cfg := DefaultConfig()
-	share.ApplyOptions(&cfg, opts...)
-	return NewLoopWithConfig(cfg)
 }
 
 // --- DSL BUILDER API (Hardcore Path) ---
@@ -104,12 +63,6 @@ func (b *LoopBuilder) Output(output io.Writer) *LoopBuilder {
 	return b
 }
 
-// TestMode enables test mode
-func (b *LoopBuilder) TestMode() *LoopBuilder {
-	b.config.TestMode = true
-	return b
-}
-
 // SmoothAnimation sets tick interval to 30ms for very smooth animations
 func (b *LoopBuilder) SmoothAnimation() *LoopBuilder {
 	b.config.TickInterval = 30 * time.Millisecond
@@ -124,5 +77,59 @@ func (b *LoopBuilder) FastAnimation() *LoopBuilder {
 
 // Start creates and returns the configured Loop instance
 func (b *LoopBuilder) Start() Loop {
-	return NewLoopWithConfig(b.config)
+	return newLoopWithConfig(b.config)
+}
+
+func (b *LoopBuilder) AutoTick() *LoopBuilder {
+	tty := DetectTTY()
+	b.config.TickInterval = determineTickInterval(tty)
+	return b
+}
+
+// --- Vía 4 (Functional Options) ---
+// This path provides a composable way to configure a loop.
+// As noted in the TFX philosophy, this is often considered an alternative to the DSL path.
+
+// StartWith creates and returns a new Loop configured with the provided functional options.
+// It is the primary entry point for the Functional Options path.
+func StartWith(cfg Config) Loop {
+	return newLoopWithConfig(cfg)
+}
+
+// WithTickInterval returns an Option to set a custom tick interval.
+func WithTickInterval(interval time.Duration) share.Option[Config] {
+	return func(cfg *Config) {
+		cfg.TickInterval = interval
+	}
+}
+
+// WithOutput returns an Option to set a custom output writer.
+func WithOutput(output io.Writer) share.Option[Config] {
+	return func(cfg *Config) {
+		cfg.Output = output
+	}
+}
+
+// WithSmoothAnimation returns an Option to set a 30ms tick interval for smooth animations.
+func WithSmoothAnimation() share.Option[Config] {
+	return func(cfg *Config) {
+		cfg.TickInterval = 30 * time.Millisecond
+	}
+}
+
+// WithFastAnimation returns an Option to set a 100ms tick interval for efficient animations.
+func WithFastAnimation() share.Option[Config] {
+	return func(cfg *Config) {
+		cfg.TickInterval = 100 * time.Millisecond
+	}
+}
+
+// WithAutoTick returns an Option to set the tick interval based on detected TTY capabilities.
+func WithAutoTick() share.Option[Config] {
+	return func(cfg *Config) {
+		// Note: This requires access to the output writer from the config.
+		// If the output is changed by another option, the order matters.
+		tty := DetectTTYForOutput(cfg.Output)
+		cfg.TickInterval = determineTickInterval(tty)
+	}
 }

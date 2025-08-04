@@ -1,71 +1,85 @@
 package runfx
 
-import "sync"
+import (
+	"sync"
+	"sync/atomic"
+)
 
-// Multiplexer manages thread-safe visual mounting/unmounting
+// VisualID is a unique and opaque identifier for a mounted visual component.
+type VisualID uint64
+
+// Multiplexer safely manages a set of visual components.
+// Now uses an atomic counter to generate unique IDs.
 type Multiplexer struct {
-	visuals map[string]Visual
+	nextID  uint64
+	visuals map[VisualID]Visual
 	mu      sync.Mutex
 }
 
+// NewMultiplexer creates a new instance of the multiplexer.
 func NewMultiplexer() *Multiplexer {
-	return &Multiplexer{visuals: make(map[string]Visual)}
+	return &Multiplexer{visuals: make(map[VisualID]Visual)}
 }
 
-// Mount adds a visual, reusing gaps if possible
-func (m *Multiplexer) Mount(name string, v Visual) {
+// Mount registers a new visual component and assigns it a unique ID.
+// Returns the assigned ID.
+func (m *Multiplexer) Mount(v Visual) VisualID {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	// Reuse gap if available
-	if _, exists := m.visuals[name]; !exists {
-		m.visuals[name] = v
-	}
+
+	// Atomically generates a unique ID.
+	id := VisualID(atomic.AddUint64(&m.nextID, 1))
+	m.visuals[id] = v
+	return id
 }
 
-// Unmount removes a visual and leaves a gap for reuse
-func (m *Multiplexer) Unmount(name string) {
+// Unmount removes a visual component using its ID.
+func (m *Multiplexer) Unmount(id VisualID) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	// Set to nil to create a reusable gap instead of deleting
-	if _, exists := m.visuals[name]; exists {
-		m.visuals[name] = nil
-	}
+	delete(m.visuals, id)
 }
 
-// ListVisuals returns the names of all mounted visuals
-func (m *Multiplexer) ListVisuals() []string {
+// GetVisual retrieves a visual component by its ID.
+func (m *Multiplexer) GetVisual(id VisualID) (Visual, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	keys := make([]string, 0, len(m.visuals))
-	for k, v := range m.visuals {
-		if v != nil { // Only include non-nil visuals
-			keys = append(keys, k)
-		}
-	}
-	return keys
-}
-
-// GetVisual returns a visual by name
-func (m *Multiplexer) GetVisual(name string) (Visual, bool) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	v, ok := m.visuals[name]
-	// Return false if the visual is nil (gap)
-	if v == nil {
-		return nil, false
-	}
+	v, ok := m.visuals[id]
 	return v, ok
 }
 
-// ReuseGap finds and reuses a gap for a new visual
-func (m *Multiplexer) ReuseGap(v Visual) (string, bool) {
+// ListVisuals returns a list of the IDs of all mounted components.
+func (m *Multiplexer) ListVisuals() []VisualID {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	for k, vis := range m.visuals {
-		if vis == nil {
-			m.visuals[k] = v
-			return k, true
+	ids := make([]VisualID, 0, len(m.visuals))
+	for id := range m.visuals {
+		ids = append(ids, id)
+	}
+	return ids
+}
+
+// Render adds the bytes of all visual components for a single frame.
+func (m *Multiplexer) Render() []byte {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	var out []byte
+	for _, v := range m.visuals {
+		if v != nil {
+			out = append(out, v.Render()...)
 		}
 	}
-	return "", false
+	return out
+}
+
+// OnResize notifies all visual components of a terminal resize event.
+func (m *Multiplexer) OnResize(cols, rows int) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for _, v := range m.visuals {
+		if v != nil {
+			v.OnResize(cols, rows)
+		}
+	}
 }

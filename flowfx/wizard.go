@@ -2,6 +2,7 @@ package flowfx
 
 import (
 	"context"
+	"maps"
 
 	"github.com/garaekz/tfx/internal/share"
 )
@@ -38,9 +39,7 @@ func DefaultWizardConfig() WizardConfig {
 func newWizard(cfg WizardConfig) *Wizard {
 	state := make(map[string]any)
 	if cfg.InitialState != nil {
-		for k, v := range cfg.InitialState {
-			state[k] = v
-		}
+		maps.Copy(state, cfg.InitialState)
 	}
 
 	return &Wizard{
@@ -117,9 +116,7 @@ func (w *Wizard) Run(ctx context.Context) error {
 		}
 
 		// Merge output into state
-		for k, v := range output {
-			w.state[k] = v
-		}
+		maps.Copy(w.state, output)
 	}
 
 	// All steps completed successfully
@@ -133,9 +130,7 @@ func (w *Wizard) Run(ctx context.Context) error {
 // GetState returns a copy of the current wizard state.
 func (w *Wizard) GetState() map[string]any {
 	state := make(map[string]any)
-	for k, v := range w.state {
-		state[k] = v
-	}
+	maps.Copy(state, w.state)
 	return state
 }
 

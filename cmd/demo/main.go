@@ -39,7 +39,7 @@ func main() {
 	case "logfx", "--logfx", "-l":
 		runlogfxDemo()
 	case "formfx", "--formfx", "-f":
-		DemoInteractiveFormFX()
+		runFormFXDemo()
 	case "multipath", "--multipath", "-m":
 		// runMultipathDemo()
 	case "showcase", "--showcase", "-sh":

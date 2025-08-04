@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 
 	"github.com/garaekz/tfx/internal/share"
 )
@@ -41,9 +42,7 @@ func DefaultMapFlowConfig() MapFlowConfig {
 func newMapFlow(cfg MapFlowConfig) *MapFlow {
 	config := make(map[string]any)
 	if cfg.Config != nil {
-		for k, v := range cfg.Config {
-			config[k] = v
-		}
+		maps.Copy(config, cfg.Config)
 	}
 
 	return &MapFlow{
@@ -169,9 +168,7 @@ func (mf *MapFlow) Run(ctx context.Context) error {
 // Steps returns a copy of the steps map.
 func (mf *MapFlow) Steps() map[string]Step {
 	steps := make(map[string]Step)
-	for k, v := range mf.steps {
-		steps[k] = v
-	}
+	maps.Copy(steps, mf.steps)
 	return steps
 }
 
@@ -185,9 +182,7 @@ func (mf *MapFlow) Order() []string {
 // Config returns a copy of the configuration.
 func (mf *MapFlow) Config() map[string]any {
 	config := make(map[string]any)
-	for k, v := range mf.config {
-		config[k] = v
-	}
+	maps.Copy(config, mf.config)
 	return config
 }
 
@@ -213,7 +208,7 @@ func (mf *MapFlow) FromJSON(data []byte) error {
 		mf.name = name
 	}
 
-	if orderData, ok := jsonData["order"].([]interface{}); ok {
+	if orderData, ok := jsonData["order"].([]any); ok {
 		mf.order = make([]string, len(orderData))
 		for i, v := range orderData {
 			if str, ok := v.(string); ok {
@@ -222,11 +217,9 @@ func (mf *MapFlow) FromJSON(data []byte) error {
 		}
 	}
 
-	if configData, ok := jsonData["config"].(map[string]interface{}); ok {
+	if configData, ok := jsonData["config"].(map[string]any); ok {
 		mf.config = make(map[string]any)
-		for k, v := range configData {
-			mf.config[k] = v
-		}
+		maps.Copy(mf.config, configData)
 	}
 
 	return nil
@@ -313,9 +306,7 @@ func (mfb *MapFlowBuilder) Order(order []string) *MapFlowBuilder {
 func (mfb *MapFlowBuilder) Build() *MapFlow {
 	mapFlow := newMapFlow(mfb.config)
 	if mfb.steps != nil {
-		for k, v := range mfb.steps {
-			mapFlow.steps[k] = v
-		}
+		maps.Copy(mapFlow.steps, mfb.steps)
 	}
 	if mfb.order != nil {
 		mapFlow.order = make([]string, len(mfb.order))
