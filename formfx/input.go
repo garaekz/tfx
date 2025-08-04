@@ -2,40 +2,35 @@ package formfx
 
 import "github.com/garaekz/tfx/runfx"
 
-// --- 1. El Componente Primitivo: InputPrompt ---
-
-// InputPrompt es un componente primitivo que gestiona el estado de una entrada de texto.
-// Es agnóstico a su representación visual (texto plano, contraseña, etc.).
+// InputPrompt stores the state for a text input primitive.
 type InputPrompt struct {
-	Value      []rune // Usamos runas para un manejo correcto de caracteres multibyte.
-	CursorPos  int    // Posición del cursor dentro del slice de runas.
+	Value      []rune
+	CursorPos  int
 	keyHandler TextKeyHandlerFunc
 
-	Done     chan string // Devuelve el valor final como un string.
+	Done     chan string
 	Canceled chan struct{}
 }
 
 type TextKeyHandlerFunc func(p *InputPrompt, key runfx.Key) bool
 
-// NewInputPrompt crea una nueva instancia de un InputPrompt primitivo.
+// NewInputPrompt creates a new InputPrompt with a default value.
 func NewInputPrompt(defaultValue string) *InputPrompt {
 	return &InputPrompt{
 		Value:      []rune(defaultValue),
 		CursorPos:  len(defaultValue),
 		Done:       make(chan string, 1),
 		Canceled:   make(chan struct{}),
-		keyHandler: TextInputKeyHandler, // Usa un manejador de teclado para texto por defecto.
+		keyHandler: TextInputKeyHandler,
 	}
 }
 
-// SetKeyHandler permite inyectar una lógica de teclado personalizada.
+// SetKeyHandler sets a custom keyboard handler.
 func (p *InputPrompt) SetKeyHandler(h TextKeyHandlerFunc) {
 	p.keyHandler = h
 }
 
-// --- 2. Lógica de Teclado por Defecto ---
-
-// TextInputKeyHandler proporciona un manejo de teclado básico para la edición de texto.
+// TextInputKeyHandler provides basic editing for text input.
 func TextInputKeyHandler(p *InputPrompt, key runfx.Key) bool {
 	if !key.IsPrintable() {
 		return false
@@ -44,10 +39,10 @@ func TextInputKeyHandler(p *InputPrompt, key runfx.Key) bool {
 	switch key.Code {
 	case runfx.KeyEnter:
 		p.Done <- string(p.Value)
-		return true // Detener el loop.
+		return true
 	case runfx.KeyEscape, runfx.KeyCtrlC:
 		close(p.Canceled)
-		return true // Detener el loop.
+		return true
 	case runfx.KeyBackspace:
 		if p.CursorPos > 0 {
 			p.Value = append(p.Value[:p.CursorPos-1], p.Value[p.CursorPos:]...)
@@ -62,17 +57,15 @@ func TextInputKeyHandler(p *InputPrompt, key runfx.Key) bool {
 			p.CursorPos++
 		}
 	default:
-		// Si es un carácter imprimible, lo inserta en la posición del cursor.
 		if key.Rune != 0 {
 			p.Value = append(p.Value[:p.CursorPos], append([]rune{key.Rune}, p.Value[p.CursorPos:]...)...)
 			p.CursorPos++
 		}
 	}
-	return false // El loop debe continuar.
+	return false
 }
 
-// --- 3. Conformidad con la Interfaz de RunFX ---
-
+// OnKey delegates to the configured key handler.
 func (p *InputPrompt) OnKey(key runfx.Key) bool {
 	if p.keyHandler != nil {
 		return p.keyHandler(p, key)

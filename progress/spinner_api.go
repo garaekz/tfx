@@ -4,74 +4,69 @@ import (
 	"io"
 
 	"github.com/garaekz/tfx/internal/share"
+	"github.com/garaekz/tfx/runfx"
 )
 
-// --- 1. Configuración ---
-
-// SpinnerConfig contiene la configuración declarativa para un componente Spinner.
+// SpinnerConfig holds configuration for Spinner.
 type SpinnerConfig struct {
-	Total   int
-	Label   string
-	Width   int
-	Theme   ProgressTheme
-	Style   ProgressStyle
-	Effect  ProgressEffect
-	Writer  io.Writer // Usado para la detección de TTY, no para escritura directa.
-	ShowETA bool
+	Label     string
+	Frames    []string
+	Theme     ProgressTheme
+	Writer    io.Writer // Used only for TTY detection.
+	DetectTTY func() runfx.TTYInfo
 }
 
-// DefaultSpinnerConfig devuelve la configuración por defecto.
+// DefaultSpinnerConfig provides sensible defaults.
 func DefaultSpinnerConfig() SpinnerConfig {
 	return SpinnerConfig{
-		Total: 100,
-		Label: "Spinner",
-		Width: 40,
-		// Asigna valores por defecto para Theme, Style, Effect...
+		Label:     "Loading",
+		Frames:    []string{"|", "/", "-", "\\"},
+		Theme:     MaterialTheme,
+		DetectTTY: runfx.DetectTTY,
 	}
 }
 
-// --- 2. API Multipath ---
-
-// Start es la función de conveniencia de alto nivel (vías Express e Instantiated).
-// Crea y devuelve un componente Spinner listo para ser montado en un runfx.Loop.
+// StartSpinner is a convenience function that creates a Spinner.
 func StartSpinner(opts ...any) *Spinner {
 	cfg := share.OverloadWithOptions[SpinnerConfig](opts, DefaultSpinnerConfig())
 	return newSpinner(cfg)
 }
 
-// --- 3. Vía DSL (Builder) ---
-
-// SpinnerBuilder proporciona la vía DSL para una configuración fluida.
+// SpinnerBuilder offers a fluent DSL for building a Spinner.
 type SpinnerBuilder struct {
 	config SpinnerConfig
 }
 
-// NewSpinnerBuilder es el punto de entrada para la vía DSL.
+// NewSpinnerBuilder creates a new builder with default configuration.
 func NewSpinnerBuilder() *SpinnerBuilder {
-	return &SpinnerBuilder{
-		config: DefaultSpinnerConfig(),
-	}
+	return &SpinnerBuilder{config: DefaultSpinnerConfig()}
 }
 
-// Total establece el valor total de la barra de progreso.
-func (b *SpinnerBuilder) Total(total int) *SpinnerBuilder {
-	b.config.Total = total
-	return b
-}
-
-// Label establece la etiqueta de la barra de progreso.
+// Label sets the spinner label.
 func (b *SpinnerBuilder) Label(label string) *SpinnerBuilder {
 	b.config.Label = label
 	return b
 }
 
-// Width establece el ancho de la barra de progreso.
-func (b *SpinnerBuilder) Width(width int) *SpinnerBuilder {
-	b.config.Width = width
+// Frames sets custom spinner frames.
+func (b *SpinnerBuilder) Frames(frames []string) *SpinnerBuilder {
+	b.config.Frames = frames
 	return b
 }
 
-// Build construye el componente Spinner con la configuración proporcionada.
+// Theme sets the spinner theme.
+func (b *SpinnerBuilder) Theme(theme ProgressTheme) *SpinnerBuilder {
+	b.config.Theme = theme
+	return b
+}
+
+// DetectTTY allows providing a custom TTY detection function.
+func (b *SpinnerBuilder) DetectTTY(fn func() runfx.TTYInfo) *SpinnerBuilder {
+	b.config.DetectTTY = fn
+	return b
+}
+
+// Build constructs the Spinner with the configured options.
 func (b *SpinnerBuilder) Build() *Spinner {
 	return newSpinner(b.config)
 }
