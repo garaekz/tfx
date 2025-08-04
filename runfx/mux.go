@@ -5,6 +5,11 @@ import (
 	"sync/atomic"
 )
 
+// MaxVisuals defines the maximum number of visuals that can be mounted
+// concurrently. This prevents unbounded growth that could lead to stack
+// exhaustion when rendering large numbers of visuals.
+const MaxVisuals = 1024
+
 // VisualID is a unique and opaque identifier for a mounted visual component.
 type VisualID uint64
 
@@ -57,6 +62,13 @@ func (m *Multiplexer) ListVisuals() []VisualID {
 		ids = append(ids, id)
 	}
 	return ids
+}
+
+// Count returns the number of currently mounted visuals.
+func (m *Multiplexer) Count() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return len(m.visuals)
 }
 
 // Render adds the bytes of all visual components for a single frame.

@@ -47,6 +47,13 @@ func (ml *MainLoop) Mount(v Visual) (unmount func(), err error) {
 		return nil, ErrMountFailed
 	}
 
+	// Enforce a maximum number of mounted visuals to prevent stack
+	// exhaustion when rendering large numbers of components. The check is
+	// done before mounting, and verified after to handle concurrent mounts.
+	if ml.mux.Count() >= MaxVisuals {
+		return nil, ErrTooManyVisuals
+	}
+
 	// Get the current terminal size and inform the new visual immediately.
 	// This ensures the component has its layout calculated before the first render.
 	if cols, rows, err := ml.writer.GetSize(); err == nil {
@@ -56,12 +63,23 @@ func (ml *MainLoop) Mount(v Visual) (unmount func(), err error) {
 	// Mount the visual in the multiplexer and get its unique ID.
 	id := ml.mux.Mount(v)
 
+	if ml.mux.Count() > MaxVisuals {
+		ml.mux.Unmount(id)
+		return nil, ErrTooManyVisuals
+	}
+
 	// Return a closure that captures the ID to unmount the visual later.
 	return func() { ml.mux.Unmount(id) }, nil
 }
 
 // Run starts the main loop and blocks until the context is canceled or Stop() is called.
 func (ml *MainLoop) Run(ctx context.Context) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if !ml.running.CompareAndSwap(false, true) {
 		return ErrLoopAlreadyRunning
 	}
@@ -108,10 +126,14 @@ func (ml *MainLoop) Run(ctx context.Context) error {
 
 // Stop gracefully shuts down the main loop.
 func (ml *MainLoop) Stop() error {
+	if !ml.running.Load() {
+		return ErrLoopNotRunning
+	}
 	if ml.cancel != nil {
 		ml.cancel()
+		return nil
 	}
-	return nil
+	return ErrLoopClosed
 }
 
 // IsRunning checks if the loop is currently active.
