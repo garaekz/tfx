@@ -4,74 +4,73 @@ import (
 	"io"
 
 	"github.com/garaekz/tfx/internal/share"
+	"github.com/garaekz/tfx/runfx"
 )
 
-// --- 1. Configuración ---
-
-// ProgressConfig contiene la configuración declarativa para un componente Progress.
+// ProgressConfig defines options for a progress bar.
 type ProgressConfig struct {
-	Total   int
-	Label   string
-	Width   int
-	Theme   ProgressTheme
-	Style   ProgressStyle
-	Effect  ProgressEffect
-	Writer  io.Writer // Usado para la detección de TTY, no para escritura directa.
-	ShowETA bool
+	Total     int
+	Label     string
+	Width     int
+	Theme     ProgressTheme
+	Style     ProgressStyle
+	Effect    ProgressEffect
+	Writer    io.Writer // Used only for TTY detection, not direct writes.
+	ShowETA   bool
+	DetectTTY func() runfx.TTYInfo
 }
 
-// DefaultProgressConfig devuelve la configuración por defecto.
+// DefaultProgressConfig returns sensible defaults.
 func DefaultProgressConfig() ProgressConfig {
 	return ProgressConfig{
-		Total: 100,
-		Label: "Progress",
-		Width: 40,
-		// Asigna valores por defecto para Theme, Style, Effect...
+		Total:     100,
+		Label:     "Progress",
+		Width:     40,
+		DetectTTY: runfx.DetectTTY,
 	}
 }
 
-// --- 2. API Multipath ---
-
-// Start es la función de conveniencia de alto nivel (vías Express e Instantiated).
-// Crea y devuelve un componente Progress listo para ser montado en un runfx.Loop.
+// Start creates a Progress component using the provided options.
 func Start(opts ...any) *Progress {
 	cfg := share.OverloadWithOptions[ProgressConfig](opts, DefaultProgressConfig())
 	return newProgress(cfg)
 }
 
-// --- 3. Vía DSL (Builder) ---
-
-// ProgressBuilder proporciona la vía DSL para una configuración fluida.
+// ProgressBuilder provides a fluent builder API.
 type ProgressBuilder struct {
 	config ProgressConfig
 }
 
-// NewProgressBuilder es el punto de entrada para la vía DSL.
+// NewProgressBuilder returns a builder with default configuration.
 func NewProgressBuilder() *ProgressBuilder {
-	return &ProgressBuilder{
-		config: DefaultProgressConfig(),
-	}
+	return &ProgressBuilder{config: DefaultProgressConfig()}
 }
 
-// Total establece el valor total de la barra de progreso.
+// Total sets the total amount of work.
 func (b *ProgressBuilder) Total(total int) *ProgressBuilder {
 	b.config.Total = total
 	return b
 }
 
-// Label establece la etiqueta de la barra de progreso.
+// Label sets the progress label.
 func (b *ProgressBuilder) Label(label string) *ProgressBuilder {
 	b.config.Label = label
 	return b
 }
 
-// Width establece el ancho de la barra de progreso.
+// Width sets the bar width.
 func (b *ProgressBuilder) Width(width int) *ProgressBuilder {
 	b.config.Width = width
 	return b
 }
 
-// Build construye el componente Progress con la configuración proporcionada.
+// DetectTTY allows providing a custom TTY detection function.
+func (b *ProgressBuilder) DetectTTY(fn func() runfx.TTYInfo) *ProgressBuilder {
+	b.config.DetectTTY = fn
+	return b
+}
+
+// Build constructs the Progress component.
 func (b *ProgressBuilder) Build() *Progress {
 	return newProgress(b.config)
 }

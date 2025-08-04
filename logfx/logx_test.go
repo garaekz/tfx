@@ -359,7 +359,7 @@ func TestCreateEntry(t *testing.T) {
 	if entry.Timestamp.IsZero() {
 		t.Error("Timestamp should not be zero")
 	}
-	if entry.Caller == nil || !strings.Contains(entry.Caller.File, "logfx.go") {
+	if entry.Caller == nil || !strings.Contains(entry.Caller.File, "logx.go") {
 		t.Errorf("Expected caller info, got %v", entry.Caller)
 	}
 
@@ -388,8 +388,8 @@ func TestGetCaller(t *testing.T) {
 	if caller == nil {
 		t.Fatal("getCaller() returned nil")
 	}
-	if !strings.Contains(caller.File, "logfx_test.go") {
-		t.Errorf("Expected file to contain logfx_test.go, got %q", caller.File)
+	if !strings.Contains(caller.File, "logx_test.go") {
+		t.Errorf("Expected file to contain logx_test.go, got %q", caller.File)
 	}
 	if !strings.Contains(caller.Function, "TestGetCaller") {
 		t.Errorf("Expected function to contain TestGetCaller, got %q", caller.Function)

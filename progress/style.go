@@ -9,7 +9,7 @@ const (
 	ProgressStyleAscii
 )
 
-// StyleChars contiene los símbolos de cada style
+// styleChars maps each style to its filled and empty symbols.
 var styleChars = map[ProgressStyle]struct {
 	Filled, Empty string
 }{

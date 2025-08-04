@@ -1,38 +1,41 @@
 package progress
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
+	"github.com/garaekz/tfx/runfx"
 	"github.com/garaekz/tfx/terminal"
 )
 
-// --- 1. El Componente de Alto Nivel: Progress ---
-
-// Progress es un componente de UI que muestra una barra de progreso.
-// Es un componente pasivo diseñado para ser montado en un runfx.Loop.
+// Progress represents a progress bar primitive.
 type Progress struct {
-	// Estado
 	total     int
 	current   int
 	label     string
 	startTime time.Time
 	isStarted bool
 
-	// Configuración de Apariencia
 	width    int
 	theme    ProgressTheme
 	style    ProgressStyle
 	effect   ProgressEffect
 	detector *terminal.Detector
 	ShowETA  bool
+	isTTY    bool
 
 	mu sync.Mutex
 }
 
-// newProgress es el constructor interno que ensambla el componente.
-// Es llamado por la API pública (Start, NewProgressBuilder).
+// newProgress assembles a Progress from configuration.
 func newProgress(cfg ProgressConfig) *Progress {
+	detect := cfg.DetectTTY
+	if detect == nil {
+		detect = runfx.DetectTTY
+	}
+	tty := detect()
+
 	return &Progress{
 		total:    cfg.Total,
 		label:    cfg.Label,
@@ -40,48 +43,31 @@ func newProgress(cfg ProgressConfig) *Progress {
 		theme:    cfg.Theme,
 		style:    cfg.Style,
 		effect:   cfg.Effect,
-		detector: terminal.NewDetector(cfg.Writer), // Asume que el detector se basa en el writer.
+		detector: terminal.NewDetector(cfg.Writer),
 		ShowETA:  cfg.ShowETA,
+		isTTY:    tty.IsTTY,
 	}
 }
 
-// --- 2. Implementación de Interfaces de RunFX ---
-
-// Render implementa la interfaz runfx.Visual.
-// Es llamado por el runfx.Loop en cada ciclo de renderizado.
-func (p *Progress) Render() []byte {
+// Render returns the current progress bar representation.
+// Falls back to plain text when not in a TTY.
+func (p *Progress) Render() string {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	if !p.isStarted {
-		return nil // No renderiza nada si no ha comenzado.
+		return ""
 	}
 
-	// Llama a la lógica de renderizado existente para generar el string.
-	rendered := RenderBar(p, p.detector)
-	return []byte(rendered)
-}
-
-// Tick implementa la interfaz runfx.Updatable.
-// Es llamado por el runfx.Loop en cada tick, útil para efectos animados.
-func (p *Progress) Tick(now time.Time) {
-	// La lógica para efectos de animación (pulsos, spinners) iría aquí.
-	// Por ahora, no hace nada, pero el contrato está cumplido.
-}
-
-// OnResize implementa la interfaz runfx.Visual.
-func (p *Progress) OnResize(cols, rows int) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	// Lógica opcional para ajustar el ancho de la barra al tamaño del terminal.
-	if cols > 0 && cols < p.width+20 {
-		p.width = max(cols-20, 10)
+	if !p.isTTY {
+		percent := float64(p.current) / float64(p.total)
+		return fmt.Sprintf("%s %3d%%", p.label, int(percent*100))
 	}
+
+	return RenderBar(p, p.detector)
 }
 
-// --- 3. Métodos para Manipular el Estado ---
-
-// Set actualiza el valor de progreso actual.
+// Set updates the progress to the given value.
 func (p *Progress) Set(current int) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -93,7 +79,7 @@ func (p *Progress) Set(current int) {
 	p.current = min(current, p.total)
 }
 
-// Add incrementa el progreso en una cantidad dada.
+// Add increments progress by the provided amount.
 func (p *Progress) Add(amount int) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -105,15 +91,14 @@ func (p *Progress) Add(amount int) {
 	p.current = min(p.current+amount, p.total)
 }
 
-// SetLabel actualiza la etiqueta de la barra de progreso.
+// SetLabel changes the progress label.
 func (p *Progress) SetLabel(label string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.label = label
 }
 
-// Finish establece el progreso al 100%.
-// En esta arquitectura, no detiene el loop ni se desmonta a sí mismo.
+// Finish sets the progress to 100%.
 func (p *Progress) Finish() {
 	p.Set(p.total)
 }

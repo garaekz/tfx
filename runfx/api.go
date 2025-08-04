@@ -86,9 +86,9 @@ func (b *LoopBuilder) AutoTick() *LoopBuilder {
 	return b
 }
 
-// --- Vía 4 (Functional Options) ---
-// This path provides a composable way to configure a loop.
-// As noted in the TFX philosophy, this is often considered an alternative to the DSL path.
+// --- Functional Options Path ---
+// This approach provides a composable way to configure a loop.
+// As noted in the TFX philosophy, it can serve as an alternative to the DSL path.
 
 // StartWith creates and returns a new Loop configured with the provided functional options.
 // It is the primary entry point for the Functional Options path.
