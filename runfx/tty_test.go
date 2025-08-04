@@ -46,6 +46,20 @@ func TestDetectTTYForOutput(t *testing.T) {
 	}
 }
 
+func TestDetectTTYForOutputNil(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("DetectTTYForOutput(nil) panicked: %v", r)
+		}
+	}()
+
+	info := DetectTTYForOutput(nil)
+	ref := DetectTTY()
+	if info.IsTTY != ref.IsTTY {
+		t.Errorf("expected IsTTY %v, got %v", ref.IsTTY, info.IsTTY)
+	}
+}
+
 func TestTTYInfoConsistency(t *testing.T) {
 	info := DetectTTY()
 

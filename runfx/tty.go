@@ -1,6 +1,7 @@
 package runfx
 
 import (
+	"fmt"
 	"io"
 	"os"
 
@@ -22,17 +23,22 @@ func DetectTTY() TTYInfo {
 
 // DetectTTYForOutput returns TTYInfo for a specific output writer
 func DetectTTYForOutput(output io.Writer) TTYInfo {
+	if output == nil {
+		output = os.Stdout
+	}
+
 	// Use TerminalWriter for consistent detection logic
 	termWriter := writer.NewTerminalWriter(output, writer.TerminalOptions{})
 
 	isTTY := termWriter.IsTerminal()
 	supportsColor := termWriter.SupportsColor()
 	colorMode := termWriter.GetColorMode()
+	ansi := isTTY && supportsColor
 
 	return TTYInfo{
 		IsTTY:     isTTY,
 		TrueColor: colorMode.String() == "TrueColor",
-		ANSI:      supportsColor,
+		ANSI:      ansi,
 		NoColor:   !supportsColor,
 	}
 }
@@ -40,6 +46,6 @@ func DetectTTYForOutput(output io.Writer) TTYInfo {
 // FallbackOutput prints minimal output if not TTY
 func FallbackOutput(msg string) {
 	if !DetectTTY().IsTTY {
-		os.Stdout.Write([]byte(msg + "\n"))
+		fmt.Fprintln(os.Stdout, msg)
 	}
 }
