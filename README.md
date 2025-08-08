@@ -88,12 +88,22 @@ func main() {
 Use a spinner:
 
 ```go
-import "github.com/garaekz/tfx/progress"
+import "github.com/garaekz/tfx/progrefx"
 
-spinner := progress.NewSpinner("Loading data...")
-spinner.Start()
-// do something...
-spinner.Success("Data loaded!")
+// Construct a spinner with a label using the progrefx package.  The
+// StartSpinner helper accepts either a config struct or functional
+// options.  Once created, call Tick() to advance frames and Render()
+// to obtain the current string representation.
+spinner := progrefx.StartSpinner(progrefx.SpinnerConfig{
+    Label: "Loading data...",
+})
+
+// Simulate some work
+for i := 0; i < 10; i++ {
+    spinner.Tick()
+    fmt.Print(spinner.Render())
+    time.Sleep(100 * time.Millisecond)
+}
 ```
 
 ---
